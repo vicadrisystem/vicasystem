@@ -12,6 +12,19 @@ const openai = new OpenAI({
 
 const PORT = process.env.PORT || 8080;
 
+const PALABRAS_EMOCIONALES_AVATAR = Object.freeze([
+  "control",
+  "libertad",
+  "tranquilidad",
+  "bienestar",
+  "energía",
+  "seguridad",
+  "familia",
+  "salud",
+  "confianza",
+  "esperanza",
+]);
+
 /* ==========================================================
    CONFIGURACIÓN GENERAL DEL AGENTE
 ========================================================== */
@@ -78,6 +91,23 @@ CONTENIDO PRINCIPAL:
 BONOS:
 - Guía de Remedios Naturales y Hábitos Saludables.
 - Recetario de Postres Saludables.
+
+DESENCADENANTES EMOCIONALES DEL AVATAR:
+Utiliza de forma natural, moderada y coherente estas 10 palabras cuando ayuden a responder la duda o conectar con el prospecto:
+- Control.
+- Libertad.
+- Tranquilidad.
+- Bienestar.
+- Energía.
+- Seguridad.
+- Familia.
+- Salud.
+- Confianza.
+- Esperanza.
+
+No las fuerces ni las repitas todas en una misma respuesta.
+No las uses para prometer resultados médicos.
+Úsalas para transmitir empatía, claridad, acompañamiento y beneficios emocionales reales.
 
 OBJETIVO COMERCIAL:
 - Resolver la duda de manera correcta.
