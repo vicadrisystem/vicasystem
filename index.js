@@ -4,73 +4,51 @@ const express = require("express");
 const OpenAI = require("openai");
 
 const app = express();
-app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+app.use(express.json());
 
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-  : null;
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 const PORT = process.env.PORT || 8080;
 
-/* ==========================================================
-   CONFIGURACIÓN GENERAL DEL AGENTE
-========================================================== */
-
 const SYSTEM_PROMPT = `
-Eres Víctor Candelaria, asesor oficial de VICA SYSTEMS.
+Eres Víctor Candelaria, asesor de VICA SYSTEMS.
 
-Atiendes por WhatsApp a personas interesadas en el Mega Pack Alimentación Sana para Diabéticos.
+Atiendes por WhatsApp a personas interesadas en el producto digital "Mega Pack Alimentación Sana para Diabéticos".
 
-Tu trabajo es responder de forma natural, breve, humana, cercana, amable y profesional.
-Nunca debes parecer un chatbot ni una inteligencia artificial.
+Tu trabajo es responder dudas de forma NATURAL, BREVE, HUMANA, CERCANA y PROFESIONAL.
 
-PERSONALIDAD:
-- Cercano.
-- Amable.
-- Paciente.
-- Profesional.
-- Natural.
-- Empático.
-- Persuasivo sin presionar.
-
-FORMA DE ESCRIBIR:
-- Responde en español neutro.
-- Usa lenguaje sencillo.
-- Máximo dos párrafos cortos.
-- Máximo 120 palabras.
+IMPORTANTE:
+- Nunca suenes robótico.
+- Nunca digas que eres una inteligencia artificial.
+- Varía ligeramente las palabras y la estructura.
+- Responde máximo en 1 o 2 párrafos cortos.
+- Usa español sencillo y claro.
 - Usa emojis con moderación.
-- No escribas textos largos.
-- Resuelve primero la duda del usuario.
-- Solo agrega un cierre comercial cuando exista intención de compra.
+- Resuelve primero la duda.
+- No presiones para vender.
+- No inventes información.
+- Si falta un dato oficial, indica que debes confirmarlo con el equipo de VICA SYSTEMS.
 
-NO DEBES DECIR:
-- "Como inteligencia artificial".
-- "Según mi base de datos".
-- "¿Te gustaría saber más?".
-- "¿Quieres que te cuente?".
-- "¿Puedo ayudarte en algo más?".
-- "Hoy más que nunca".
-- "Imagina por un momento".
-- "No es magia".
+REGLAS:
+- NO hagas diagnósticos.
+- NO prometas curar o revertir la diabetes.
+- NO prometas eliminar medicamentos.
+- NO garantices resultados médicos.
+- NO sustituyas la valoración de un médico o profesional de la salud.
+- NO atribuyas propiedades médicas a un alimento o remedio si no aparecen en la información oficial.
+- El material es educativo y está enfocado en alimentación y hábitos saludables.
+- NO digas que el producto es físico.
+- NO inventes garantías, precios, promociones, métodos de pago o beneficios.
 
-REGLAS MÉDICAS:
-- Nunca prometas curar, revertir o eliminar la diabetes.
-- Nunca prometas eliminar medicamentos.
-- Nunca garantices resultados médicos.
-- Nunca hagas diagnósticos.
-- Nunca sustituyas la valoración de un médico o profesional de la salud.
-- Cuando corresponda, aclara que el Mega Pack es una guía educativa sobre alimentación saludable.
-
-INFORMACIÓN OFICIAL DEL NEGOCIO:
-- Empresa: VICA SYSTEMS.
+INFORMACIÓN REAL:
+- Negocio: VICA SYSTEMS.
 - Agente: Víctor Candelaria.
 - Producto: Mega Pack Alimentación Sana para Diabéticos.
-- Tipo de producto: digital en PDF.
-- Precio oficial vigente: $79 MXN.
-- Entrega: digital e inmediata después de confirmar el pago.
+- Tipo: producto digital en PDF.
+- Precio oficial: $79 MXN.
+- Entrega: digital después de confirmar el pago.
 - Métodos de pago: transferencia bancaria o pago en efectivo.
 
 CONTENIDO PRINCIPAL:
@@ -82,33 +60,31 @@ BONOS:
 - Guía de Remedios Naturales y Hábitos Saludables.
 - Recetario de Postres Saludables.
 
-OBJETIVO COMERCIAL:
-- Resolver la duda de manera correcta.
-- Reducir objeciones.
-- Facilitar la compra cuando exista intención comercial.
-- No presionar al usuario.
-- No inventar información que no aparezca en esta base oficial.
-- Si falta un dato, indica que necesitas confirmarlo con el equipo de VICA SYSTEMS.
+CONCEPTOS EMOCIONALES DEL AVATAR:
+Utiliza de forma natural, solo cuando encajen con la conversación, ideas relacionadas con:
+- control
+- libertad
+- tranquilidad
+- bienestar
+- energía
+- seguridad
+- familia
+- salud
+- confianza
+- esperanza
 
-CIERRES PERMITIDOS CUANDO HAYA INTENCIÓN DE COMPRA:
-- "La promoción continúa disponible 😊".
-- "En cuanto se confirme tu pago recibirás el Mega Pack de inmediato".
-- "Puedes aprovechar el precio especial mientras la promoción siga activa".
+Nunca conviertas estos conceptos en promesas médicas.
 
-Nunca repitas exactamente el mismo cierre en todas las conversaciones.
+OBJETIVO:
+Después de resolver correctamente la duda, dirige suavemente a la compra solamente cuando exista intención comercial clara.
+El cierre debe sentirse natural y nunca como presión.
 `;
-
-/* ==========================================================
-   FUNCIONES AUXILIARES
-========================================================== */
 
 function normalizarTexto(texto) {
   return String(texto || "")
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[¿?¡!.,;:()"']/g, " ")
-    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -117,145 +93,136 @@ function elegirAleatoria(opciones) {
 }
 
 function limpiarRespuesta(texto) {
-  return String(texto || "")
-    .trim()
-    .replace(/^hola[\s😊🙏❤️💙✨🥗🍎,!.]*/i, "")
-    .replace(/^buenos dias[\s😊🙏❤️💙✨🥗🍎,!.]*/i, "")
-    .replace(/^buenas tardes[\s😊🙏❤️💙✨🥗🍎,!.]*/i, "")
-    .replace(/^buenas noches[\s😊🙏❤️💙✨🥗🍎,!.]*/i, "")
+  texto = String(texto || "").trim();
+
+  texto = texto
+    .replace(/^¡?\s*hola\s*[😊🙏❤️💙✨🌿🥗🍎,.!]*\s*/gi, "")
+    .replace(/^gracias por preguntar\s*[😊🙏❤️💙✨🌿🥗🍎,.!]*\s*/gi, "")
+    .replace(/^buenos días\s*[😊🙏❤️💙✨🌿🥗🍎,.!]*\s*/gi, "")
+    .replace(/^buenos dias\s*[😊🙏❤️💙✨🌿🥗🍎,.!]*\s*/gi, "")
+    .replace(/^buenas tardes\s*[😊🙏❤️💙✨🌿🥗🍎,.!]*\s*/gi, "")
+    .replace(/^buenas noches\s*[😊🙏❤️💙✨🌿🥗🍎,.!]*\s*/gi, "");
+
+  texto = texto
+    .replace(/¿[^?]*(quieres saber más|quieres saber mas|te interesa|te gustaría|te gustaria|te ayudo en algo más|te ayudo en algo mas|quieres que te cuente)[^?]*\?/gi, "")
     .replace(/\s{2,}/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+
+  return texto;
 }
 
-function coincideKeyword(textoNormalizado, palabraClave) {
-  const texto = ` ${normalizarTexto(textoNormalizado)} `;
-  const keyword = ` ${normalizarTexto(palabraClave)} `;
-
-  if (!keyword.trim()) {
-    return false;
-  }
-
-  return texto.includes(keyword);
-}
-
-function contieneAlguna(textoNormalizado, palabrasClave) {
-  return palabrasClave.some((palabraClave) =>
-    coincideKeyword(textoNormalizado, palabraClave)
+function contieneAlguna(textoNormalizado, palabras) {
+  return palabras.some((palabra) =>
+    textoNormalizado.includes(normalizarTexto(palabra))
   );
 }
-
-/* ==========================================================
-   EXTRACCIÓN SEGURA DEL MENSAJE DE MANYCHAT
-========================================================== */
-
-function extraerTextoEntrada(body) {
-  if (!body) {
-    return "";
-  }
-
-  if (typeof body === "string") {
-    return body;
-  }
-
-  const candidatos = [
-    body.texto,
-    body.mensaje,
-    body.message,
-    body.text,
-    body.input,
-    body.user_message,
-    body.last_text_input,
-    body.content,
-    body?.data?.texto,
-    body?.data?.mensaje,
-    body?.data?.message,
-    body?.data?.text,
-  ];
-
-  const encontrado = candidatos.find(
-    (valor) =>
-      typeof valor === "string" &&
-      valor.trim().length > 0
-  );
-
-  return encontrado ? encontrado.trim() : "";
-}
-
-/* ==========================================================
-   CIERRES COMERCIALES
-========================================================== */
 
 function cierreVenta() {
   const cierres = [
-    `💙 El Mega Pack sigue disponible por $79 MXN. Puedes pagar mediante transferencia bancaria o en efectivo.`,
-    `🥗 La promoción continúa disponible. Cuando se confirme tu pago, recibirás inmediatamente todo el material en PDF.`,
-    `😊 Puedes aprovechar el precio especial de $79 MXN. La entrega es digital después de confirmar el pago.`,
+    `💙 El Mega Pack está disponible por $79 MXN. Puedes realizar tu pago por transferencia bancaria o en efectivo.`,
+    `🥗 El Mega Pack completo tiene un precio de $79 MXN y la entrega es digital después de confirmar tu pago.`,
+    `😊 Si deseas adquirirlo, el Mega Pack está disponible por $79 MXN mediante transferencia bancaria o pago en efectivo.`,
   ];
 
   return elegirAleatoria(cierres);
 }
 
-function debeAgregarCierre(intencion) {
-  const intencionesComerciales = [
-    "contenido",
-    "entrega",
-    "precio",
-    "metodos_pago",
-    "razon_compra",
-    "tiempo_entrega",
-    "postres",
-  ];
-
-  return intencionesComerciales.includes(intencion);
-}
-
-function agregarCierre(texto, intencion) {
+function agregarCierreSiCorresponde(texto, debeCerrar) {
   const limpio = limpiarRespuesta(texto);
 
   if (!limpio) {
-    return debeAgregarCierre(intencion)
+    return debeCerrar
       ? cierreVenta()
       : "Necesito confirmar ese dato con el equipo de VICA SYSTEMS para darte una respuesta correcta. 😊";
   }
 
-  if (!debeAgregarCierre(intencion)) {
+  if (!debeCerrar) {
     return limpio;
   }
 
   return `${limpio}\n\n${cierreVenta()}`;
 }
 
-function crearRespuesta(intencion, respuestas) {
-  return {
-    intencion,
-    respuesta: agregarCierre(elegirAleatoria(respuestas), intencion),
-  };
-}
-
-/* ==========================================================
-   RESPUESTAS DIRECTAS
-========================================================== */
-
 function respuestaDirecta(textoNormalizado) {
+  // 1. POSTRES: va antes de restricciones para evitar choque con "puedo comer postres".
   if (
     contieneAlguna(textoNormalizado, [
-      "que incluye el mega pack",
-      "que contiene el mega pack",
-      "que trae el paquete",
-      "contenido del paquete",
-      "contenido del mega pack",
-      "cuales son los modulos",
-      "que materiales incluye",
+      "incluye postres",
+      "trae postres",
+      "hay recetas de postres",
+      "recetario de postres",
+      "postres saludables",
+      "postres para diabeticos",
+      "recetas de postres",
     ])
   ) {
-    return crearRespuesta("contenido", [
-      `El Mega Pack incluye un Plan Integral de Alimentación, un Recetario Saludable y una Guía de Compras Inteligentes. También recibirás una Guía de Remedios Naturales y Hábitos Saludables y un Recetario de Postres Saludables como bonos. 😊`,
-      `Recibirás tres recursos principales: el Plan Integral de Alimentación, el Recetario Saludable y la Guía de Compras Inteligentes. Además, la oferta incluye dos bonos complementarios. 🥗`,
-      `Es un paquete digital completo con un plan de alimentación, recetas saludables, una guía para comprar mejor y dos bonos relacionados con hábitos y postres saludables. 💙`,
-    ]);
+    return {
+      intencion: "postres",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `Sí 😊 La oferta incluye un Recetario de Postres Saludables como bono del Mega Pack.`,
+          `Sí 💙 Dentro de los bonos recibirás un Recetario de Postres Saludables.`,
+          `Sí 🍰 El Mega Pack incluye un bono dedicado a postres saludables.`,
+        ]),
+        true
+      ),
+    };
   }
 
+  // 2. PRECIO.
+  if (
+    contieneAlguna(textoNormalizado, [
+      "cuanto cuesta",
+      "cual es el precio",
+      "precio del mega pack",
+      "costo del mega pack",
+      "cuanto vale",
+      "precio",
+      "costo",
+      "79 pesos",
+    ])
+  ) {
+    return {
+      intencion: "precio",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `El Mega Pack completo tiene un precio de $79 MXN. 😊`,
+          `Actualmente el precio del Mega Pack es de $79 MXN. 💙`,
+          `El Mega Pack digital cuesta $79 MXN. 🥗`,
+        ]),
+        true
+      ),
+    };
+  }
+
+  // 3. MÉTODOS DE PAGO.
+  if (
+    contieneAlguna(textoNormalizado, [
+      "como puedo pagar",
+      "metodos de pago",
+      "forma de pago",
+      "transferencia bancaria",
+      "pago en efectivo",
+      "puedo pagar en efectivo",
+      "quiero pagar",
+      "datos para pagar",
+    ])
+  ) {
+    return {
+      intencion: "metodos_pago",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `Puedes realizar tu pago mediante transferencia bancaria o en efectivo. 😊`,
+          `Aceptamos transferencia bancaria y pago en efectivo. 💙`,
+          `El pago puede hacerse por transferencia bancaria o en efectivo. 🥗`,
+        ]),
+        true
+      ),
+    };
+  }
+
+  // 4. ENTREGA Y FORMATO DIGITAL.
   if (
     contieneAlguna(textoNormalizado, [
       "como recibo el producto",
@@ -270,120 +237,20 @@ function respuestaDirecta(textoNormalizado) {
       "link de descarga",
     ])
   ) {
-    return crearRespuesta("entrega", [
-      `El producto es completamente digital. Después de confirmar tu pago recibirás el Mega Pack en formato PDF para descargarlo desde tu celular, computadora o tablet. 😊`,
-      `La entrega se realiza de forma digital. Cuando se confirme el pago te enviaremos el acceso al Mega Pack en PDF. 💙`,
-      `No se envía ningún producto físico. Todo el material se entrega en PDF después de validar tu pago. 🥗`,
-    ]);
+    return {
+      intencion: "entrega",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `El Mega Pack es completamente digital en PDF. Después de confirmar tu pago recibirás el material para descargarlo. 😊`,
+          `La entrega es digital. En cuanto se confirme el pago recibirás el acceso al Mega Pack en PDF. 💙`,
+          `No se envía ningún producto físico. Todo el material se entrega en formato PDF después de confirmar el pago. 🥗`,
+        ]),
+        true
+      ),
+    };
   }
 
-  if (
-    contieneAlguna(textoNormalizado, [
-      "sirve para diabetes tipo 1",
-      "sirve para diabetes tipo 2",
-      "sirve para prediabetes",
-      "es para diabeticos",
-      "puedo usarlo si tengo diabetes",
-      "para quien es",
-      "funciona para cualquier diabetico",
-    ])
-  ) {
-    return crearRespuesta("publico_objetivo", [
-      `El Mega Pack es una guía educativa para personas que desean mejorar y organizar su alimentación. No sustituye la valoración, el tratamiento ni las indicaciones de un profesional de la salud. 💙`,
-      `El material ofrece información práctica sobre alimentación saludable. Cada persona tiene necesidades distintas, por eso es importante mantener el seguimiento con su médico o especialista. 😊`,
-      `Puede utilizarse como apoyo educativo para mejorar hábitos de alimentación, pero no reemplaza un plan médico o nutricional personalizado. 🥗`,
-    ]);
-  }
-
-  if (
-    contieneAlguna(textoNormalizado, [
-      "que voy a aprender",
-      "que aprendere",
-      "para que sirve el material",
-      "que beneficios tiene",
-      "que ensena",
-    ])
-  ) {
-    return crearRespuesta("aprendizaje", [
-      `Aprenderás a organizar mejor tus comidas, conocer opciones de recetas, hacer compras más inteligentes y desarrollar hábitos que faciliten cuidar tu alimentación cada día. 😊`,
-      `El material te ayudará a planificar tu alimentación, encontrar ideas prácticas para cocinar y elegir mejor tus alimentos en el supermercado. 💙`,
-      `Encontrarás herramientas sencillas para dejar de improvisar tanto al momento de comprar, cocinar y organizar tus comidas. 🥗`,
-    ]);
-  }
-
-  if (
-    contieneAlguna(textoNormalizado, [
-      "cuanto cuesta",
-      "cual es el precio",
-      "precio del mega pack",
-      "costo del mega pack",
-      "cuanto vale",
-      "precio",
-      "costo",
-      "$79",
-      "79 pesos",
-    ])
-  ) {
-    return crearRespuesta("precio", [
-      `El Mega Pack completo tiene un precio especial de $79 MXN durante la promoción vigente. 😊`,
-      `Actualmente puedes obtener todo el material y los bonos incluidos por $79 MXN. 💙`,
-      `La oferta activa del Mega Pack digital es de $79 MXN. 🥗`,
-    ]);
-  }
-
-  if (
-    contieneAlguna(textoNormalizado, [
-      "como puedo pagar",
-      "que metodos de pago",
-      "forma de pago",
-      "pago por transferencia",
-      "transferencia bancaria",
-      "pago en efectivo",
-      "puedo pagar en efectivo",
-      "datos para pagar",
-      "quiero pagar",
-    ])
-  ) {
-    return crearRespuesta("metodos_pago", [
-      `Puedes realizar tu pago mediante transferencia bancaria o en efectivo. Después de confirmar el pago recibirás el acceso digital. 😊`,
-      `Aceptamos transferencia bancaria y pago en efectivo. Cuando el pago quede validado te enviaremos el Mega Pack. 💙`,
-      `El pago puede hacerse por transferencia o en efectivo, según la opción que te resulte más cómoda. 🥗`,
-    ]);
-  }
-
-  if (
-    contieneAlguna(textoNormalizado, [
-      "por que deberia comprarlo",
-      "por que comprar el mega pack",
-      "vale la pena",
-      "que diferencia tiene",
-      "por que me conviene",
-    ])
-  ) {
-    return crearRespuesta("razon_compra", [
-      `Porque reúne en un solo lugar herramientas para organizar tus comidas, preparar recetas saludables y hacer compras más inteligentes, sin tener que buscar información dispersa. 😊`,
-      `El Mega Pack concentra recursos prácticos que pueden facilitar la planificación de tu alimentación diaria. 💙`,
-      `Su principal ventaja es que integra alimentación, recetas y compras en una misma guía digital fácil de consultar. 🥗`,
-    ]);
-  }
-
-  if (
-    contieneAlguna(textoNormalizado, [
-      "tendre que dejar de comer",
-      "todo esta prohibido",
-      "puedo comer postres",
-      "que hago con los antojos",
-      "puedo seguir comiendo lo que me gusta",
-      "hay alimentos prohibidos",
-    ])
-  ) {
-    return crearRespuesta("restricciones_alimentarias", [
-      `El objetivo no es hacerte sentir que todo está prohibido, sino ayudarte a conocer alternativas y organizar una alimentación más variada y práctica. 😊`,
-      `El Mega Pack incluye recetas y opciones de postres saludables para ayudarte a encontrar alternativas dentro de una alimentación mejor organizada. 💙`,
-      `La guía busca facilitar mejores decisiones y ofrecerte opciones, no imponer restricciones extremas. 🥗`,
-    ]);
-  }
-
+  // 5. TIEMPO DE ENTREGA.
   if (
     contieneAlguna(textoNormalizado, [
       "cuando lo recibo",
@@ -392,59 +259,48 @@ function respuestaDirecta(textoNormalizado) {
       "tiempo de entrega",
       "entrega inmediata",
       "lo recibo hoy",
-      "demora la entrega",
       "en cuanto tiempo",
     ])
   ) {
-    return crearRespuesta("tiempo_entrega", [
-      `Después de confirmar tu pago recibirás el Mega Pack de forma digital para descargarlo de inmediato. 😊`,
-      `La entrega se realiza en cuanto el pago queda confirmado. Recibirás todo el material en formato PDF. 💙`,
-      `No necesitas esperar un envío físico. El acceso digital se entrega después de validar tu pago. 🥗`,
-    ]);
+    return {
+      intencion: "tiempo_entrega",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `Después de confirmar tu pago recibirás el Mega Pack de forma digital. 😊`,
+          `La entrega se realiza después de confirmar el pago y recibirás el material en PDF. 💙`,
+          `Al ser digital, el material se entrega una vez que el pago queda confirmado. 🥗`,
+        ]),
+        true
+      ),
+    };
   }
 
+  // 6. CONTENIDO DEL MEGA PACK.
   if (
     contieneAlguna(textoNormalizado, [
-      "tengo una duda",
-      "necesito ayuda",
-      "tengo un problema",
-      "problema con el pago",
-      "problema con la descarga",
-      "no puedo descargar",
-      "no recibi el material",
-      "necesito soporte",
-      "quiero hablar con un asesor",
-      "contactar al equipo",
+      "que incluye el mega pack",
+      "que contiene el mega pack",
+      "que trae el paquete",
+      "contenido del mega pack",
+      "contenido del paquete",
+      "cuales son los modulos",
+      "que materiales incluye",
     ])
   ) {
-    return crearRespuesta("soporte", [
-      `Puedes escribirnos con confianza. El equipo de VICA SYSTEMS te ayudará con cualquier duda relacionada con el pago, la entrega o el acceso al material. 😊`,
-      `Con gusto te ayudaremos a revisar cualquier inconveniente con tu compra o con la descarga del Mega Pack. 💙`,
-      `Si presentas algún problema con el pago o el acceso, necesitamos revisar tu caso con el equipo para darte una respuesta correcta. 🥗`,
-    ]);
+    return {
+      intencion: "contenido",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `El Mega Pack incluye un Plan Integral de Alimentación, un Recetario Saludable y una Guía de Compras Inteligentes. También incluye una Guía de Remedios Naturales y Hábitos Saludables y un Recetario de Postres Saludables como bonos. 😊`,
+          `Recibirás el Plan Integral de Alimentación, el Recetario Saludable y la Guía de Compras Inteligentes, además de los dos bonos incluidos en la oferta. 💙`,
+          `Es un paquete digital con alimentación, recetas, compras inteligentes y dos bonos complementarios. 🥗`,
+        ]),
+        true
+      ),
+    };
   }
 
-  if (
-    contieneAlguna(textoNormalizado, [
-      "puedo comer tortillas",
-      "puedo comer tortilla",
-      "puedo comer arroz",
-      "puedo comer pan",
-      "tengo que dejar la tortilla",
-      "tengo que dejar el pan",
-      "tengo que dejar el arroz",
-      "incluye carbohidratos",
-      "que pasa con el pan",
-      "que pasa con la tortilla",
-    ])
-  ) {
-    return crearRespuesta("carbohidratos_comunes", [
-      `El Mega Pack busca ayudarte a tomar decisiones más organizadas sobre tu alimentación, no a prohibir alimentos de manera general. Las cantidades y elecciones adecuadas pueden variar según cada persona. 💙`,
-      `La guía incluye recomendaciones prácticas para mejorar la selección de alimentos. Sin embargo, las porciones de tortilla, arroz o pan deben ajustarse a tus necesidades y a las indicaciones de tu profesional de la salud. 😊`,
-      `No todas las personas necesitan las mismas cantidades. El material puede orientarte de forma educativa, pero no sustituye un plan nutricional personalizado. 🥗`,
-    ]);
-  }
-
+  // 7. FRUTAS.
   if (
     contieneAlguna(textoNormalizado, [
       "que frutas puedo comer",
@@ -457,56 +313,72 @@ function respuestaDirecta(textoNormalizado) {
       "que fruta recomiendan",
     ])
   ) {
-    return crearRespuesta("frutas", [
-      `El Mega Pack incluye orientación general para ayudarte a elegir mejor tus alimentos, incluyendo frutas. Las porciones y opciones adecuadas pueden variar según cada persona. 💙`,
-      `Las frutas pueden formar parte de una alimentación organizada, pero la cantidad y frecuencia deben adaptarse a tus necesidades y a las indicaciones de tu profesional de la salud. 😊`,
-      `Dentro del material encontrarás recomendaciones educativas para planificar mejor tu alimentación. No se establece una única fruta o porción para todas las personas. 🥗`,
-    ]);
+    return {
+      intencion: "frutas",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `Las frutas pueden formar parte de una alimentación organizada, pero la cantidad y frecuencia deben adaptarse a las necesidades de cada persona y a las indicaciones de su profesional de la salud. 💙`,
+          `El material ofrece orientación general para elegir mejor tus alimentos, incluyendo frutas. Las porciones deben ajustarse de forma individual. 😊`,
+          `No existe una única fruta o porción adecuada para todas las personas. La guía es educativa y debe complementarse con la orientación profesional. 🥗`,
+        ]),
+        false
+      ),
+    };
   }
 
+  // 8. TORTILLA, ARROZ Y PAN.
   if (
     contieneAlguna(textoNormalizado, [
-      "incluye postres",
-      "trae postres",
-      "hay recetas de postres",
-      "recetario de postres",
-      "postres saludables",
-      "postres para diabeticos",
-      "puedo preparar postres",
-      "recetas dulces",
-      "recetas de pastel",
-      "recetas de galletas",
+      "puedo comer tortillas",
+      "puedo comer tortilla",
+      "puedo comer arroz",
+      "puedo comer pan",
+      "tengo que dejar la tortilla",
+      "tengo que dejar el pan",
+      "tengo que dejar el arroz",
+      "que pasa con el pan",
+      "que pasa con la tortilla",
     ])
   ) {
-    return crearRespuesta("postres", [
-      `Sí. La oferta incluye un Recetario de Postres Saludables con diferentes opciones para complementar el Mega Pack. 🍰`,
-      `Recibirás un bono especial con recetas de postres saludables y opciones prácticas para preparar en casa. 😊`,
-      `El Mega Pack incluye recetas saludables y, como bono, un recetario dedicado a postres. 💙`,
-    ]);
+    return {
+      intencion: "carbohidratos_comunes",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `El objetivo no es prohibir alimentos de manera general. Las cantidades y elecciones de tortilla, arroz o pan pueden variar según cada persona. 💙`,
+          `La guía puede orientarte a organizar mejor tus alimentos, pero las porciones deben adaptarse a tus necesidades y a la orientación de tu profesional de la salud. 😊`,
+          `No todas las personas necesitan las mismas cantidades. El material es educativo y no reemplaza un plan nutricional personalizado. 🥗`,
+        ]),
+        false
+      ),
+    };
   }
 
+  // 9. RESTRICCIONES Y ANTOJOS.
   if (
     contieneAlguna(textoNormalizado, [
-      "es facil de entender",
-      "necesito saber nutricion",
-      "es complicado",
-      "es dificil",
-      "sirve para principiantes",
-      "lenguaje sencillo",
-      "puedo entenderlo",
-      "como se usa",
+      "tendre que dejar de comer",
+      "todo esta prohibido",
+      "que hago con los antojos",
+      "puedo seguir comiendo lo que me gusta",
+      "hay alimentos prohibidos",
     ])
   ) {
-    return crearRespuesta("facilidad_uso", [
-      `El Mega Pack está presentado con un lenguaje sencillo y práctico para que puedas consultarlo sin necesidad de tener conocimientos de nutrición. 😊`,
-      `No necesitas ser especialista. El material está organizado para que puedas leerlo y utilizarlo de manera sencilla. 💙`,
-      `La información se presenta de forma clara y accesible, con recursos prácticos para el día a día. 🥗`,
-    ]);
+    return {
+      intencion: "restricciones_alimentarias",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `El objetivo del Mega Pack no es hacerte sentir que todo está prohibido, sino ayudarte a conocer alternativas y organizar mejor tu alimentación. 😊`,
+          `La guía busca ayudarte a tomar decisiones más informadas y encontrar opciones prácticas para tu alimentación. 💙`,
+          `El enfoque es ofrecer alternativas y organización, no imponer restricciones extremas. 🥗`,
+        ]),
+        false
+      ),
+    };
   }
 
+  // 10. INGREDIENTES Y FACILIDAD DE LAS RECETAS.
   if (
     contieneAlguna(textoNormalizado, [
-      "los ingredientes son caros",
       "ingredientes caros",
       "recetas costosas",
       "recetas caras",
@@ -518,20 +390,144 @@ function respuestaDirecta(textoNormalizado) {
       "son recetas faciles",
     ])
   ) {
-    return crearRespuesta("ingredientes_recetas", [
-      `El objetivo del Mega Pack es ofrecer ideas prácticas con ingredientes que puedan encontrarse en supermercados y comercios habituales. 😊`,
-      `Las recetas están pensadas para facilitar la alimentación diaria, sin depender necesariamente de ingredientes difíciles de conseguir. 💙`,
-      `La guía busca ayudarte a organizar tus comidas con opciones prácticas. La disponibilidad y el precio de los ingredientes pueden variar según tu localidad. 🥗`,
-    ]);
+    return {
+      intencion: "ingredientes_recetas",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `Las recetas están pensadas para facilitar la alimentación diaria con opciones prácticas. La disponibilidad y el precio de los ingredientes pueden variar según tu localidad. 😊`,
+          `El objetivo es utilizar opciones prácticas y alimentos que puedan encontrarse en supermercados y comercios habituales. 💙`,
+          `La guía busca evitar complicaciones innecesarias al momento de preparar tus comidas. 🥗`,
+        ]),
+        false
+      ),
+    };
   }
 
+  // 11. FACILIDAD DE USO.
+  if (
+    contieneAlguna(textoNormalizado, [
+      "es facil de entender",
+      "necesito saber nutricion",
+      "es complicado",
+      "es dificil de entender",
+      "sirve para principiantes",
+      "lenguaje sencillo",
+      "puedo entenderlo",
+      "como se usa",
+    ])
+  ) {
+    return {
+      intencion: "facilidad_uso",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `El material está presentado con un lenguaje sencillo y práctico. No necesitas tener conocimientos de nutrición para consultarlo. 😊`,
+          `No necesitas ser especialista. El Mega Pack está organizado para que puedas leerlo y utilizarlo de manera sencilla. 💙`,
+          `La información se presenta de forma clara y accesible para facilitar su consulta diaria. 🥗`,
+        ]),
+        false
+      ),
+    };
+  }
 
-  /* ========================================================
-     INTENCIÓN 16 — DESEOS Y DOLORES EMOCIONALES DEL AVATAR
-     Palabras clave: glucosa, azúcar, control, energía,
-     bienestar, familia, esperanza, confianza, vida y cambio.
-  ======================================================== */
+  // 12. QUÉ APRENDERÁ.
+  if (
+    contieneAlguna(textoNormalizado, [
+      "que voy a aprender",
+      "que aprendere",
+      "para que sirve el material",
+      "que beneficios tiene",
+      "que ensena",
+    ])
+  ) {
+    return {
+      intencion: "aprendizaje",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `Aprenderás a organizar mejor tus comidas, conocer opciones de recetas y realizar compras más inteligentes. 😊`,
+          `El material busca ayudarte a planificar tu alimentación y encontrar ideas prácticas para el día a día. 💙`,
+          `Encontrarás herramientas para organizar tus comidas, recetas y compras de una forma más sencilla. 🥗`,
+        ]),
+        false
+      ),
+    };
+  }
 
+  // 13. PARA QUIÉN ES.
+  if (
+    contieneAlguna(textoNormalizado, [
+      "sirve para diabetes tipo 1",
+      "sirve para diabetes tipo 2",
+      "sirve para prediabetes",
+      "es para diabeticos",
+      "puedo usarlo si tengo diabetes",
+      "para quien es",
+      "funciona para cualquier diabetico",
+    ])
+  ) {
+    return {
+      intencion: "publico_objetivo",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `El Mega Pack es una guía educativa para personas que desean mejorar y organizar su alimentación. No sustituye la valoración ni las indicaciones de un profesional de la salud. 💙`,
+          `Es un material educativo sobre alimentación saludable. Cada persona puede tener necesidades diferentes, por eso debe complementarse con el seguimiento profesional. 😊`,
+          `Puede utilizarse como apoyo educativo para mejorar hábitos de alimentación, pero no reemplaza un plan médico o nutricional personalizado. 🥗`,
+        ]),
+        false
+      ),
+    };
+  }
+
+  // 14. POR QUÉ COMPRARLO.
+  if (
+    contieneAlguna(textoNormalizado, [
+      "por que deberia comprarlo",
+      "por que comprar el mega pack",
+      "vale la pena",
+      "que diferencia tiene",
+      "por que me conviene",
+    ])
+  ) {
+    return {
+      intencion: "razon_compra",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `Porque reúne en un solo lugar herramientas para organizar tus comidas, consultar recetas y hacer compras más inteligentes. 😊`,
+          `El Mega Pack concentra recursos prácticos para facilitar la planificación de tu alimentación diaria. 💙`,
+          `Su principal ventaja es integrar alimentación, recetas y compras en un mismo paquete digital. 🥗`,
+        ]),
+        true
+      ),
+    };
+  }
+
+  // 15. SOPORTE.
+  if (
+    contieneAlguna(textoNormalizado, [
+      "tengo una duda",
+      "necesito ayuda",
+      "tengo un problema",
+      "problema con el pago",
+      "problema con la descarga",
+      "no puedo descargar",
+      "no recibi el material",
+      "necesito soporte",
+      "quiero hablar con un asesor",
+    ])
+  ) {
+    return {
+      intencion: "soporte",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `Puedes escribirnos con confianza. Te ayudaremos con cualquier duda relacionada con el pago, la entrega o el acceso al material. 😊`,
+          `Con gusto revisaremos cualquier inconveniente relacionado con tu compra o con la descarga del Mega Pack. 💙`,
+          `Si tienes un problema con el pago o el acceso, podemos revisarlo para darte una respuesta correcta. 🥗`,
+        ]),
+        false
+      ),
+    };
+  }
+
+  // 16. INTENCIÓN EMOCIONAL. Está al final para no interferir con preguntas específicas.
   if (
     contieneAlguna(textoNormalizado, [
       "glucosa",
@@ -546,155 +542,118 @@ function respuestaDirecta(textoNormalizado) {
       "cambio",
     ])
   ) {
-    return crearRespuesta("bienestar_emocional", [
-      `Entiendo 💙 Muchas personas buscan justamente más claridad y tranquilidad al momento de organizar su alimentación. El Mega Pack está pensado como una guía práctica para ayudarte a tomar decisiones más informadas en tu día a día, sin sustituir la orientación de tu médico.`,
-
-      `Cuidar la alimentación también puede dar más confianza al momento de decidir qué comprar y qué preparar. 🥗 El material reúne herramientas prácticas para ayudarte a organizar mejor tus hábitos y tu bienestar diario.`,
-
-      `Es totalmente comprensible querer sentir más control y seguridad sobre la alimentación. 💙 Este material busca darte una guía sencilla para organizar tus comidas y desarrollar hábitos más saludables, siempre como complemento de la atención profesional.`,
-    ]);
+    return {
+      intencion: "bienestar_emocional",
+      respuesta: agregarCierreSiCorresponde(
+        elegirAleatoria([
+          `Entiendo 💙 Buscar más claridad y tranquilidad al organizar la alimentación es una preocupación muy común. El Mega Pack está pensado como una guía práctica y educativa para facilitar esas decisiones.`,
+          `Cuidar la alimentación puede ayudarte a sentir más organización y confianza en tus decisiones diarias. 🥗 El material reúne recursos prácticos para acompañar ese proceso.`,
+          `Es comprensible querer sentir más control y seguridad al organizar tus comidas. 💙 La guía busca ayudarte con información práctica, siempre como complemento de la orientación profesional.`,
+        ]),
+        false
+      ),
+    };
   }
 
   return null;
 }
 
-/* ==========================================================
-   DETECCIÓN DE INTENCIÓN COMERCIAL EN CONSULTAS ABIERTAS
-========================================================== */
-
-function detectarIntencionComercial(textoNormalizado) {
-  if (
-    contieneAlguna(textoNormalizado, [
-      "quiero comprar",
-      "quiero adquirir",
-      "quiero el mega pack",
-      "me interesa comprar",
-      "como hago mi pedido",
-      "como lo compro",
-      "donde pago",
-      "quiero pagar",
-      "precio",
-      "cuanto cuesta",
-      "transferencia",
-      "pago en efectivo",
-      "metodo de pago",
-      "datos bancarios",
-    ])
-  ) {
-    return "precio";
-  }
-
-  return "consulta_abierta";
+function tieneIntencionComercial(textoNormalizado) {
+  return contieneAlguna(textoNormalizado, [
+    "quiero comprar",
+    "quiero adquirir",
+    "quiero el mega pack",
+    "me interesa comprar",
+    "como hago mi pedido",
+    "como lo compro",
+    "donde pago",
+    "quiero pagar",
+    "precio",
+    "cuanto cuesta",
+    "transferencia",
+    "pago en efectivo",
+    "metodo de pago",
+  ]);
 }
 
-/* ==========================================================
-   RUTA DE COMPROBACIÓN
-========================================================== */
-
 app.get("/", (req, res) => {
-  return res.status(200).json({
-    estado: "activo",
-    agente: "VICA SYSTEMS",
-    mensaje: "Agente de ventas activo ✅",
-  });
+  res.send("Bot VICA SYSTEMS activo ✅");
 });
-
-/* ==========================================================
-   ENDPOINT PRINCIPAL PARA MANYCHAT
-========================================================== */
 
 app.post("/mensaje", async (req, res) => {
   try {
-    const texto = extraerTextoEntrada(req.body);
+    const texto =
+      req.body.texto ||
+      req.body.mensaje ||
+      req.body.message ||
+      "";
 
-    console.log(
-      "Mensaje recibido:",
-      String(texto).trim() ? "[contenido recibido]" : "[mensaje vacío]"
-    );
+    console.log("Texto recibido:", texto ? "[contenido recibido]" : "[vacío]");
 
-    if (!String(texto).trim()) {
-      console.log("Intención detectada: mensaje_vacio");
-
-      return res.status(200).json({
-        respuesta:
-          "No pude identificar tu mensaje. Por favor, escríbelo nuevamente y con gusto te ayudamos. 😊",
+    if (!texto) {
+      return res.json({
+        respuesta: "No pude identificar tu mensaje. Por favor, escríbelo nuevamente. 😊",
       });
     }
 
     const textoNormalizado = normalizarTexto(texto);
-    const respuestaEncontrada = respuestaDirecta(textoNormalizado);
+    const directa = respuestaDirecta(textoNormalizado);
 
-    if (respuestaEncontrada) {
-      console.log("Intención detectada:", respuestaEncontrada.intencion);
-      console.log("Respuesta enviada: [base de conocimiento]");
+    if (directa) {
+      console.log("Intención detectada:", directa.intencion);
+      console.log("Respuesta generada: base de conocimiento");
 
-      return res.status(200).json({
-        respuesta: respuestaEncontrada.respuesta,
+      return res.json({
+        respuesta: directa.respuesta,
       });
     }
 
-    console.log("Intención detectada: consulta_abierta");
-
-    if (!openai) {
-      console.error(
-        "OPENAI_API_KEY no está configurada. Se responde sin detener el servidor."
-      );
-
-      return res.status(200).json({
-        respuesta:
-          "Necesito confirmar esa información con el equipo de VICA SYSTEMS para darte una respuesta correcta. 😊",
-      });
-    }
+    console.log("Intención detectada: consulta abierta");
 
     const response = await openai.responses.create({
       model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
-      instructions: SYSTEM_PROMPT,
-      input: String(texto),
-      max_output_tokens: 250,
+      temperature: 0.4,
+      input: [
+        {
+          role: "system",
+          content: SYSTEM_PROMPT,
+        },
+        {
+          role: "user",
+          content: texto,
+        },
+      ],
     });
 
     const respuestaIA = limpiarRespuesta(response.output_text || "");
-    const intencionComercial =
-      detectarIntencionComercial(textoNormalizado);
 
-    const respuestaFinal = respuestaIA
-      ? agregarCierre(respuestaIA, intencionComercial)
-      : "En este momento necesito confirmar esa información con el equipo de VICA SYSTEMS para darte una respuesta correcta. 😊";
+    if (!respuestaIA) {
+      return res.json({
+        respuesta:
+          "Necesito confirmar ese dato con el equipo de VICA SYSTEMS para darte una respuesta correcta. 😊",
+      });
+    }
 
-    console.log("Respuesta enviada: [OpenAI]");
+    const respuestaFinal = agregarCierreSiCorresponde(
+      respuestaIA,
+      tieneIntencionComercial(textoNormalizado)
+    );
 
-    return res.status(200).json({
+    console.log("Respuesta generada: OpenAI");
+
+    return res.json({
       respuesta: respuestaFinal,
     });
   } catch (error) {
-    console.error(
-      "Error controlado en POST /mensaje:",
-      error?.name || "Error",
-      "-",
-      error?.message || "Error desconocido"
-    );
+    console.error("Error en /mensaje:", error.message);
 
     return res.status(200).json({
       respuesta:
-        "En este momento no pude procesar correctamente tu mensaje. Por favor, inténtalo nuevamente en unos minutos. 😊",
+        "En este momento no pude procesar tu mensaje. Por favor, inténtalo nuevamente en unos minutos. 😊",
     });
   }
 });
 
-/* ==========================================================
-   RUTAS NO ENCONTRADAS
-========================================================== */
-
-app.use((req, res) => {
-  return res.status(404).json({
-    respuesta: "Ruta no encontrada.",
-  });
-});
-
-/* ==========================================================
-   INICIO DEL SERVIDOR
-========================================================== */
-
 app.listen(PORT, () => {
-  console.log(`Servidor de VICA SYSTEMS corriendo en el puerto ${PORT}`);
+  console.log(`Servidor VICA SYSTEMS corriendo en puerto ${PORT}`);
 });
