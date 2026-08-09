@@ -4,11 +4,14 @@ const express = require("express");
 const OpenAI = require("openai");
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
 const PORT = process.env.PORT || 8080;
 
@@ -125,10 +128,58 @@ function limpiarRespuesta(texto) {
     .trim();
 }
 
+function coincideKeyword(textoNormalizado, palabraClave) {
+  const texto = ` ${normalizarTexto(textoNormalizado)} `;
+  const keyword = ` ${normalizarTexto(palabraClave)} `;
+
+  if (!keyword.trim()) {
+    return false;
+  }
+
+  return texto.includes(keyword);
+}
+
 function contieneAlguna(textoNormalizado, palabrasClave) {
-  return palabrasClave.some((palabra) =>
-    textoNormalizado.includes(normalizarTexto(palabra))
+  return palabrasClave.some((palabraClave) =>
+    coincideKeyword(textoNormalizado, palabraClave)
   );
+}
+
+/* ==========================================================
+   EXTRACCIÓN SEGURA DEL MENSAJE DE MANYCHAT
+========================================================== */
+
+function extraerTextoEntrada(body) {
+  if (!body) {
+    return "";
+  }
+
+  if (typeof body === "string") {
+    return body;
+  }
+
+  const candidatos = [
+    body.texto,
+    body.mensaje,
+    body.message,
+    body.text,
+    body.input,
+    body.user_message,
+    body.last_text_input,
+    body.content,
+    body?.data?.texto,
+    body?.data?.mensaje,
+    body?.data?.message,
+    body?.data?.text,
+  ];
+
+  const encontrado = candidatos.find(
+    (valor) =>
+      typeof valor === "string" &&
+      valor.trim().length > 0
+  );
+
+  return encontrado ? encontrado.trim() : "";
 }
 
 /* ==========================================================
@@ -321,7 +372,6 @@ function respuestaDirecta(textoNormalizado) {
       "tendre que dejar de comer",
       "todo esta prohibido",
       "puedo comer postres",
-      "incluye postres",
       "que hago con los antojos",
       "puedo seguir comiendo lo que me gusta",
       "hay alimentos prohibidos",
@@ -555,11 +605,7 @@ app.get("/", (req, res) => {
 
 app.post("/mensaje", async (req, res) => {
   try {
-    const texto =
-      req.body?.texto ||
-      req.body?.mensaje ||
-      req.body?.message ||
-      "";
+    const texto = extraerTextoEntrada(req.body);
 
     console.log(
       "Mensaje recibido:",
@@ -589,6 +635,17 @@ app.post("/mensaje", async (req, res) => {
 
     console.log("Intención detectada: consulta_abierta");
 
+    if (!openai) {
+      console.error(
+        "OPENAI_API_KEY no está configurada. Se responde sin detener el servidor."
+      );
+
+      return res.status(200).json({
+        respuesta:
+          "Necesito confirmar esa información con el equipo de VICA SYSTEMS para darte una respuesta correcta. 😊",
+      });
+    }
+
     const response = await openai.responses.create({
       model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
       instructions: SYSTEM_PROMPT,
@@ -612,6 +669,8 @@ app.post("/mensaje", async (req, res) => {
   } catch (error) {
     console.error(
       "Error controlado en POST /mensaje:",
+      error?.name || "Error",
+      "-",
       error?.message || "Error desconocido"
     );
 
