@@ -12,19 +12,6 @@ const openai = new OpenAI({
 
 const PORT = process.env.PORT || 8080;
 
-const PALABRAS_EMOCIONALES_AVATAR = Object.freeze([
-  "control",
-  "libertad",
-  "tranquilidad",
-  "bienestar",
-  "energía",
-  "seguridad",
-  "familia",
-  "salud",
-  "confianza",
-  "esperanza",
-]);
-
 /* ==========================================================
    CONFIGURACIÓN GENERAL DEL AGENTE
 ========================================================== */
@@ -91,23 +78,6 @@ CONTENIDO PRINCIPAL:
 BONOS:
 - Guía de Remedios Naturales y Hábitos Saludables.
 - Recetario de Postres Saludables.
-
-DESENCADENANTES EMOCIONALES DEL AVATAR:
-Utiliza de forma natural, moderada y coherente estas 10 palabras cuando ayuden a responder la duda o conectar con el prospecto:
-- Control.
-- Libertad.
-- Tranquilidad.
-- Bienestar.
-- Energía.
-- Seguridad.
-- Familia.
-- Salud.
-- Confianza.
-- Esperanza.
-
-No las fuerces ni las repitas todas en una misma respuesta.
-No las uses para prometer resultados médicos.
-Úsalas para transmitir empatía, claridad, acompañamiento y beneficios emocionales reales.
 
 OBJETIVO COMERCIAL:
 - Resolver la duda de manera correcta.
@@ -502,6 +472,36 @@ function respuestaDirecta(textoNormalizado) {
       `El objetivo del Mega Pack es ofrecer ideas prácticas con ingredientes que puedan encontrarse en supermercados y comercios habituales. 😊`,
       `Las recetas están pensadas para facilitar la alimentación diaria, sin depender necesariamente de ingredientes difíciles de conseguir. 💙`,
       `La guía busca ayudarte a organizar tus comidas con opciones prácticas. La disponibilidad y el precio de los ingredientes pueden variar según tu localidad. 🥗`,
+    ]);
+  }
+
+
+  /* ========================================================
+     INTENCIÓN 16 — DESEOS Y DOLORES EMOCIONALES DEL AVATAR
+     Palabras clave: glucosa, azúcar, control, energía,
+     bienestar, familia, esperanza, confianza, vida y cambio.
+  ======================================================== */
+
+  if (
+    contieneAlguna(textoNormalizado, [
+      "glucosa",
+      "azucar",
+      "control",
+      "energia",
+      "bienestar",
+      "familia",
+      "esperanza",
+      "confianza",
+      "vida",
+      "cambio",
+    ])
+  ) {
+    return crearRespuesta("bienestar_emocional", [
+      `Entiendo 💙 Muchas personas buscan justamente más claridad y tranquilidad al momento de organizar su alimentación. El Mega Pack está pensado como una guía práctica para ayudarte a tomar decisiones más informadas en tu día a día, sin sustituir la orientación de tu médico.`,
+
+      `Cuidar la alimentación también puede dar más confianza al momento de decidir qué comprar y qué preparar. 🥗 El material reúne herramientas prácticas para ayudarte a organizar mejor tus hábitos y tu bienestar diario.`,
+
+      `Es totalmente comprensible querer sentir más control y seguridad sobre la alimentación. 💙 Este material busca darte una guía sencilla para organizar tus comidas y desarrollar hábitos más saludables, siempre como complemento de la atención profesional.`,
     ]);
   }
 
