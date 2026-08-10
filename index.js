@@ -1,539 +1,726 @@
-const http = require("http");
+require("dotenv").config();
 
-const PORT = Number(process.env.PORT || 8080);
-const OPENAI_API_KEY = String(process.env.OPENAI_API_KEY || "").trim();
-const OPENAI_MODEL = String(process.env.OPENAI_MODEL || "gpt-4.1-mini").trim();
+const express = require("express");
+const OpenAI = require("openai");
+
+const app = express();
+
+app.use(express.json());
+
+const PORT = process.env.PORT || 8080;
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+// ==========================================================
+// INFORMACIÓN OFICIAL
+// ==========================================================
+
+const DATOS_PAGO = {
+  banco: "Spin by OXXO",
+  titular: "Francisco Camacho Sotelo",
+  clabe: "728969000160022558",
+
+  aportes: {
+    gratitud: 90,
+    proyecto: 150,
+    alcance: 200
+  }
+};
+
+// ==========================================================
+// PROMPT DEL AGENTE
+// ==========================================================
 
 const SYSTEM_PROMPT = `
-Eres Víctor Candelaria, asesor de VICA SYSTEMS.
+Eres Isabella Rojas, asistente de soporte del proyecto
+Cuando Dios Habla.
 
-Atiendes por WhatsApp a personas interesadas en el producto digital
-"Mega Pack Alimentación Sana para Diabéticos".
+Tu personalidad es amable, cálida, espiritual, paciente,
+respetuosa y humana.
 
-ESTILO:
-- Natural, breve, humano y cercano.
-- Máximo 1 o 2 párrafos cortos.
-- Español sencillo.
-- Usa emojis con moderación.
-- Primero resuelve la duda.
-- Solo después guía suavemente al siguiente paso de compra cuando corresponda.
-- No saludes innecesariamente.
-- No hagas varias preguntas a la vez.
-- No inventes información.
+Responde como una persona real por WhatsApp.
 
-INFORMACIÓN OFICIAL:
-- Negocio: VICA SYSTEMS.
-- Producto: Mega Pack Alimentación Sana para Diabéticos.
-- Precio: $79 MXN.
-- Formato: digital en PDF.
-- Entrega: digital después de confirmar el pago.
-- Métodos de pago: transferencia bancaria o pago en efectivo.
-- Incluye:
-  1. Plan Integral de Alimentación.
-  2. Recetario Saludable.
-  3. Guía de Compras Inteligentes.
-- Bonos:
-  1. Guía de Remedios Naturales y Hábitos Saludables.
-  2. Recetario de Postres Saludables.
+REGLAS DE ESTILO:
 
-DOLORES DEL AVATAR:
-- No saber qué comer.
-- Miedo a equivocarse con los alimentos.
-- Sentir que todo está prohibido.
-- Confusión sobre frutas, tortilla, arroz, pan y postres.
-- No saber organizar las comidas.
-- Cansancio de información contradictoria.
-- Preocupación por su bienestar y su familia.
+- Responde en español.
+- Utiliza párrafos cortos.
+- Deja una línea en blanco entre ideas.
+- Usa emojis cálidos con moderación.
+- Evita bloques largos de texto.
+- No repitas información innecesariamente.
+- No saludes nuevamente si la conversación ya comenzó.
+- No hagas preguntas innecesarias.
+- Responde directamente la duda del usuario.
+- No uses Markdown como encabezados con símbolos #.
+- No inventes enlaces, promociones, cuentas ni información.
+- No digas que eres una inteligencia artificial.
+- No presiones a la persona para pagar.
+- El apoyo es voluntario.
+- Nunca presentes el apoyo como una compra obligatoria.
 
-DESEOS DEL AVATAR:
-- Sentir más control.
-- Tener tranquilidad al elegir alimentos.
-- Organizar mejor las comidas.
-- Saber qué comprar.
-- Tener recetas prácticas.
-- Sentirse con más confianza.
-- Cuidar su bienestar y el de su familia.
+INFORMACIÓN OFICIAL DEL PROYECTO:
 
-PALABRAS EMOCIONALES:
-control, tranquilidad, bienestar, energía, seguridad, familia,
-salud, confianza, esperanza y cambio.
+El material principal es un libro digital en formato PDF
+llamado "Cuando Dios Habla".
 
-REGLAS MÉDICAS:
-- No diagnostiques.
-- No prometas curar o revertir la diabetes.
-- No prometas eliminar medicamentos.
-- No garantices resultados médicos.
-- No sustituyas la atención de un médico o profesional de salud.
+El PDF ya fue enviado previamente dentro de la conversación
+de WhatsApp.
 
-OBJETIVO:
-Contestar la pregunta y mantener la conversación avanzando hacia el embudo
-cuando exista intención comercial, sin presión.
+El contenido es bíblico y no pertenece exclusivamente a una
+religión o denominación.
+
+Los montos de apoyo sugeridos son:
+
+- $70 MXN como muestra de gratitud.
+- $150 MXN para apoyar el proyecto.
+- $200 MXN para ayudarnos a llegar a más personas.
+
+La persona puede realizar su apoyo por:
+
+- Transferencia bancaria.
+- Depósito en OXXO.
+
+DATOS PARA TRANSFERENCIA:
+
+Banco: Spin by OXXO
+Titular: Francisco Camacho Sotelo
+CLABE: 728969000160022558
+
+Después de realizar el apoyo, la persona debe enviar en este
+mismo chat la imagen de su comprobante.
+
+El apoyo puede hacerse después, mañana o cuando la persona
+tenga oportunidad. No existe ningún problema por esperar.
+
+Cuando respondas una pregunta concreta, no repitas todo el
+discurso de venta. Contesta únicamente lo necesario de manera
+clara, amable, ordenada y visual.
 `;
 
-function normalizarTexto(texto) {
-  return String(texto || "")
-    .toLowerCase()
+// ==========================================================
+// FUNCIONES GENERALES
+// ==========================================================
+
+function normalizarTexto(valor) {
+  return String(valor ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[¿?¡!.,;:()[\]{}"'`]/g, " ")
+    .toLowerCase()
+    .replace(/[¿?¡!.,;:()[\]{}"']/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function elegirAleatoria(opciones) {
-  return opciones[Math.floor(Math.random() * opciones.length)];
-}
-
 function contieneAlguna(texto, frases) {
-  const normalizado = ` ${normalizarTexto(texto)} `;
-  return frases.some((frase) => {
-    const objetivo = ` ${normalizarTexto(frase)} `;
-    return normalizado.includes(objetivo);
-  });
+  return frases.some((frase) => texto.includes(frase));
 }
 
-function cierreVenta() {
-  return elegirAleatoria([
-    `💙 El Mega Pack está disponible por $79 MXN. Puedes pagar por transferencia bancaria o en efectivo.`,
-    `🥗 El Mega Pack completo cuesta $79 MXN y se entrega digitalmente después de confirmar el pago.`,
-    `😊 Si decides adquirirlo, el precio es de $79 MXN y puedes pagar por transferencia o en efectivo.`,
-  ]);
+function elegirAleatoria(opciones) {
+  return opciones[
+    Math.floor(Math.random() * opciones.length)
+  ];
 }
 
-function respuestaDirecta(textoOriginal) {
-  const t = normalizarTexto(textoOriginal);
+function limpiarRespuesta(valor) {
+  return String(valor ?? "")
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 
-  // Intenciones específicas primero para evitar choques.
+// ==========================================================
+// MENSAJES REUTILIZABLES
+// ==========================================================
+
+function cierrePago() {
+  return [
+    "💌 Para apoyar este proyecto espiritual puedes elegir:",
+    "",
+    "🏦 Transferencia bancaria",
+    "🏪 Depósito en OXXO",
+    "",
+    "¿Cuál opción prefieres? 🙏"
+  ].join("\n");
+}
+
+function agregarCierre(respuesta) {
+  const respuestaLimpia = limpiarRespuesta(respuesta);
+
+  if (!respuestaLimpia) {
+    return cierrePago();
+  }
+
+  const normalizada =
+    normalizarTexto(respuestaLimpia);
+
+  const yaIncluyeCierre =
+    normalizada.includes("cual opcion prefieres") ||
+    (
+      normalizada.includes("transferencia bancaria") &&
+      normalizada.includes("deposito en oxxo")
+    );
+
+  if (yaIncluyeCierre) {
+    return respuestaLimpia;
+  }
+
+  return `${respuestaLimpia}\n\n${cierrePago()}`;
+}
+
+function respuestaCuenta() {
+  return [
+    "Claro 😊 Estos son los datos para realizar tu apoyo por transferencia:",
+    "",
+    `🏦 Banco: ${DATOS_PAGO.banco}`,
+    `👤 Titular: ${DATOS_PAGO.titular}`,
+    `🔢 CLABE: ${DATOS_PAGO.clabe}`,
+    "",
+    "Cuando realices tu apoyo, envíame aquí la imagen del comprobante y con mucho gusto te entregaré tus regalos 🎁🙏"
+  ].join("\n");
+}
+
+function respuestaPagoPosterior() {
+  return [
+    "Claro 😊 No hay ningún problema, puedes realizar tu apoyo después.",
+    "",
+    "Cuando estés listo, estos son los datos para transferencia:",
+    "",
+    `🏦 Banco: ${DATOS_PAGO.banco}`,
+    `👤 Titular: ${DATOS_PAGO.titular}`,
+    `🔢 CLABE: ${DATOS_PAGO.clabe}`,
+    "",
+    "Después solo envíame aquí la imagen del comprobante para entregarte tus regalos 🎁",
+    "",
+    "Que Dios te bendiga 🙏❤️"
+  ].join("\n");
+}
+
+function respuestaOxxo() {
+  return [
+    "Claro 😊 También puedes realizar tu apoyo mediante depósito en OXXO.",
+    "",
+    "Utiliza el código o QR de Spin que te compartimos anteriormente en esta conversación 🏪",
+    "",
+    "Cuando termines, envíame aquí una fotografía completa y legible del ticket para poder entregarte tus regalos 🎁🙏"
+  ].join("\n");
+}
+
+function respuestaReligion() {
+  return [
+    "El contenido está basado en la Biblia 🙏📖",
+    "",
+    "No pertenece exclusivamente a una religión o denominación. Fue preparado para cualquier persona que quiera acercarse más a Dios y profundizar en Su Palabra ❤️"
+  ].join("\n");
+}
+
+function respuestaEntrega() {
+  return [
+    "El libro es completamente digital y se entrega en formato PDF 📖✨",
+    "",
+    "Ya fue enviado anteriormente en esta misma conversación. Puedes buscarlo un poco más arriba en el chat y descargarlo directamente en tu teléfono 📲"
+  ].join("\n");
+}
+
+function respuestaPrecio() {
+  return [
+    "El libro digital ya fue entregado y el apoyo al proyecto es completamente voluntario 🙏",
+    "",
+    "Puedes elegir la cantidad con la que te sientas cómodo:",
+    "",
+    `💛 $${DATOS_PAGO.aportes.gratitud} MXN como muestra de gratitud`,
+    `🌱 $${DATOS_PAGO.aportes.proyecto} MXN para apoyar el proyecto`,
+    `✨ $${DATOS_PAGO.aportes.alcance} MXN para ayudarnos a llegar a más personas`,
+    "",
+    cierrePago()
+  ].join("\n");
+}
+
+// ==========================================================
+// RESPUESTAS DIRECTAS
+// ==========================================================
+
+function respuestaDirecta(mensajeOriginal) {
+  const texto =
+    normalizarTexto(mensajeOriginal);
+
+  if (!texto) {
+    return null;
+  }
+
+  // --------------------------------------------------------
+  // PAGAR DESPUÉS
+  // Debe evaluarse antes de la intención genérica de pago.
+  // --------------------------------------------------------
+
+  const preguntaPagoPosterior =
+    contieneAlguna(texto, [
+      "pagar despues",
+      "pago despues",
+      "depositar despues",
+      "transferir despues",
+      "hacerlo despues",
+      "puedo hacerlo despues",
+      "puedo pagar manana",
+      "pagar manana",
+      "pago manana",
+      "depositar manana",
+      "transferir manana",
+      "lo hago manana",
+      "mas tarde",
+      "otro dia",
+      "la proxima semana",
+      "cuando tenga dinero"
+    ]) ||
+    texto === "despues" ||
+    texto === "manana";
+
+  if (preguntaPagoPosterior) {
+    return respuestaPagoPosterior();
+  }
+
+  // --------------------------------------------------------
+  // DATOS BANCARIOS
+  // --------------------------------------------------------
+
+  const preguntaCuenta =
+    contieneAlguna(texto, [
+      "numero de cuenta",
+      "numero para depositar",
+      "numero para transferir",
+      "datos bancarios",
+      "datos de transferencia",
+      "cuenta bancaria",
+      "a que cuenta",
+      "en que cuenta",
+      "donde transfiero",
+      "donde deposito",
+      "cual es la cuenta",
+      "cual cuenta",
+      "pasame la cuenta",
+      "mandame la cuenta",
+      "clave interbancaria"
+    ]) ||
+    texto === "cuenta" ||
+    texto === "clabe";
+
+  if (preguntaCuenta) {
+    return respuestaCuenta();
+  }
+
+  // --------------------------------------------------------
+  // OXXO
+  // --------------------------------------------------------
+
+  const preguntaOxxo =
+    contieneAlguna(texto, [
+      "deposito en oxxo",
+      "depositar en oxxo",
+      "pagar en oxxo",
+      "pago en oxxo",
+      "como pago en oxxo",
+      "como deposito en oxxo",
+      "codigo de oxxo",
+      "qr de oxxo",
+      "ticket de oxxo"
+    ]) ||
+    texto === "oxxo";
+
+  if (preguntaOxxo) {
+    return respuestaOxxo();
+  }
+
+  // --------------------------------------------------------
+  // RELIGIÓN
+  // --------------------------------------------------------
 
   if (
-    t === "precio" ||
-    t === "costo" ||
-    contieneAlguna(t, [
-      "cuanto cuesta",
-      "cual es el precio",
-      "precio del mega pack",
-      "costo del mega pack",
-      "cuanto vale",
-      "79 pesos"
+    contieneAlguna(texto, [
+      "catolico",
+      "catolica",
+      "cristiano",
+      "cristiana",
+      "religion",
+      "religioso",
+      "religiosa",
+      "evangelico",
+      "evangelica",
+      "denominacion",
+      "de que iglesia"
     ])
   ) {
-    return `El Mega Pack completo tiene un precio de $79 MXN. 😊
-
-${cierreVenta()}`;
+    return respuestaReligion();
   }
 
-  if (contieneAlguna(t, [
-    "como puedo pagar",
-    "metodos de pago",
-    "forma de pago",
-    "transferencia bancaria",
-    "pago en efectivo",
-    "quiero pagar",
-    "datos para pagar",
-    "como compro",
-    "quiero comprar"
-  ])) {
-    return `Puedes realizar el pago por transferencia bancaria o en efectivo. 😊
+  // --------------------------------------------------------
+  // ENTREGA, PDF O PRODUCTO FÍSICO
+  // --------------------------------------------------------
 
-${cierreVenta()}`;
+  if (
+    contieneAlguna(texto, [
+      "es fisico",
+      "libro fisico",
+      "producto fisico",
+      "formato fisico",
+      "es digital",
+      "libro digital",
+      "es pdf",
+      "archivo pdf",
+      "como lo recibo",
+      "cuando lo recibo",
+      "donde lo recibo",
+      "como se entrega",
+      "donde esta el libro",
+      "no encuentro el libro",
+      "no me llego",
+      "no lo recibi",
+      "envio",
+      "domicilio"
+    ])
+  ) {
+    return respuestaEntrega();
   }
 
-  if (contieneAlguna(t, [
-    "que incluye el mega pack",
-    "que contiene el mega pack",
-    "que trae el paquete",
-    "contenido del mega pack",
-    "cuales son los modulos",
-    "que materiales incluye",
-    "que incluye"
-  ])) {
-    return `Incluye el Plan Integral de Alimentación, el Recetario Saludable y la Guía de Compras Inteligentes. 💙 También recibes la Guía de Remedios Naturales y Hábitos Saludables y el Recetario de Postres Saludables como bonos.
+  // --------------------------------------------------------
+  // PRECIO O MONTO
+  // --------------------------------------------------------
 
-${cierreVenta()}`;
+  if (
+    contieneAlguna(texto, [
+      "cuanto cuesta",
+      "cuanto vale",
+      "que precio",
+      "precio",
+      "costo",
+      "cuanto pago",
+      "cuanto deposito",
+      "cuanto transfiero",
+      "cuanto hay que dar",
+      "cuanto debo pagar",
+      "de cuanto es el apoyo",
+      "cantidad"
+    ])
+  ) {
+    return respuestaPrecio();
   }
 
-  if (contieneAlguna(t, [
-    "incluye postres",
-    "trae postres",
-    "recetas de postres",
-    "recetario de postres",
-    "postres saludables",
-    "postres"
-  ])) {
-    return `Sí 😊 El Mega Pack incluye como bono un Recetario de Postres Saludables.
+  // --------------------------------------------------------
+  // PRECIO
+  // --------------------------------------------------------
 
-${cierreVenta()}`;
+  if (
+    contieneAlguna(texto, [
+      "cuanto cuesta",
+      "cuanto vale",
+      "precio",
+      "costo",
+      "79 pesos",
+      "cuanto pago"
+    ])
+  ) {
+    return [
+      "💙 El Mega Pack completo tiene un precio de $79 MXN.",
+      "",
+      "Incluye el Plan Integral de Alimentación, el Recetario Saludable y la Guía de Compras Inteligentes.",
+      "",
+      "🎁 Además recibirás todos los bonos de la oferta."
+    ].join("\n");
   }
 
-  if (contieneAlguna(t, [
-    "como recibo el producto",
-    "como entregan el material",
-    "en que formato",
-    "es digital",
-    "es fisico",
-    "recibir el pdf",
-    "descargar el pdf",
-    "link de descarga",
-    "entrega",
-    "descarga"
-  ])) {
-    return `El material es 100% digital en PDF. Después de confirmar tu pago recibirás el acceso para descargarlo. 💙
+  // --------------------------------------------------------
+  // CONTENIDO
+  // --------------------------------------------------------
 
-${cierreVenta()}`;
+  if (
+    contieneAlguna(texto, [
+      "que incluye",
+      "que contiene",
+      "que trae",
+      "contenido",
+      "mega pack"
+    ])
+  ) {
+    return [
+      "🥗 El Mega Pack incluye:",
+      "",
+      "✅ Plan Integral de Alimentación.",
+      "✅ Recetario Saludable.",
+      "✅ Guía de Compras Inteligentes.",
+      "",
+      "🎁 Bonos:",
+      "✅ Guía de Remedios Naturales y Hábitos Saludables.",
+      "✅ Recetario de Postres Saludables."
+    ].join("\n");
   }
 
-  if (contieneAlguna(t, [
-    "cuando lo recibo",
-    "cuando llega",
-    "cuanto tarda",
-    "tiempo de entrega",
-    "en cuanto tiempo"
-  ])) {
-    return `La entrega es digital y se realiza después de confirmar el pago. 😊
+  // --------------------------------------------------------
+  // PAGO
+  // --------------------------------------------------------
 
-${cierreVenta()}`;
+  if (
+    contieneAlguna(texto, [
+      "como pago",
+      "formas de pago",
+      "metodos de pago",
+      "transferencia",
+      "oxxo"
+    ])
+  ) {
+    return [
+      "💙 Puedes realizar tu pago mediante:",
+      "",
+      "🏦 Transferencia bancaria.",
+      "🏪 Depósito en OXXO.",
+      "",
+      "Después envía tu comprobante junto con la palabra LISTO ✅"
+    ].join("\n");
   }
 
-  if (contieneAlguna(t, [
-    "que frutas puedo comer",
-    "frutas para diabeticos",
-    "puedo comer fruta",
-    "puedo comer platano",
-    "puedo comer mango",
-    "puedo comer uvas",
-    "puedo comer manzana",
-    "frutas"
-  ])) {
-    return `Las frutas pueden formar parte de una alimentación organizada, pero las porciones adecuadas pueden variar según cada persona y la orientación de su profesional de salud. 💙`;
+  // --------------------------------------------------------
+  // ENTREGA
+  // --------------------------------------------------------
+
+  if (
+    contieneAlguna(texto, [
+      "como lo recibo",
+      "cuando lo recibo",
+      "es digital",
+      "es pdf",
+      "entrega"
+    ])
+  ) {
+    return [
+      "📲 El Mega Pack se entrega completamente en formato PDF.",
+      "",
+      "Después de confirmar tu pago recibirás el material digital."
+    ].join("\n");
   }
 
-  if (contieneAlguna(t, [
-    "puedo comer tortillas",
-    "puedo comer tortilla",
-    "puedo comer arroz",
-    "puedo comer pan",
-    "tortilla",
-    "arroz",
-    "pan"
-  ])) {
-    return `El objetivo no es prohibir alimentos de forma general. Las cantidades de tortilla, arroz o pan pueden variar según las necesidades de cada persona. 💙`;
+  // --------------------------------------------------------
+  // POSTRES
+  // --------------------------------------------------------
+
+  if (
+    contieneAlguna(texto, [
+      "postres",
+      "incluye postres",
+      "recetas de postres"
+    ])
+  ) {
+    return [
+      "🍰 Sí, recibirás un Recetario de Postres Saludables como bono especial."
+    ].join("\n");
   }
 
-  if (contieneAlguna(t, [
-    "recetas faciles",
-    "recetas complicadas",
-    "ingredientes caros",
-    "ingredientes",
-    "recetas",
-    "cocinar"
-  ])) {
-    return `El material está pensado para facilitar la alimentación diaria con recetas prácticas y una guía clara para organizar mejor tus comidas. 🥗`;
+  // --------------------------------------------------------
+  // FRUTAS
+  // --------------------------------------------------------
+
+  if (
+    contieneAlguna(texto, [
+      "frutas",
+      "que frutas puedo comer",
+      "puedo comer fruta"
+    ])
+  ) {
+    return [
+      "🍎 Las frutas pueden formar parte de una alimentación organizada.",
+      "",
+      "Las cantidades adecuadas pueden variar según cada persona y las indicaciones de su profesional de salud."
+    ].join("\n");
   }
 
-  if (contieneAlguna(t, [
-    "es facil",
-    "es dificil",
-    "es complicado",
-    "puedo entenderlo",
-    "necesito saber nutricion",
-    "como se usa"
-  ])) {
-    return `El material está presentado con lenguaje sencillo y práctico. 😊 No necesitas conocimientos de nutrición para consultarlo.`;
+  // --------------------------------------------------------
+  // TORTILLA, PAN Y ARROZ
+  // --------------------------------------------------------
+
+  if (
+    contieneAlguna(texto, [
+      "tortilla",
+      "arroz",
+      "pan"
+    ])
+  ) {
+    return [
+      "💙 El objetivo no es prohibir alimentos de forma general.",
+      "",
+      "Las porciones pueden variar según cada persona y su alimentación."
+    ].join("\n");
   }
 
-  if (contieneAlguna(t, [
-    "que voy a aprender",
-    "que aprendere",
-    "que beneficios tiene",
-    "para que sirve",
-    "beneficios"
-  ])) {
-    return `Aprenderás a organizar mejor tus comidas, consultar opciones de recetas y realizar compras más inteligentes. 💙`;
+  // --------------------------------------------------------
+  // RECETAS
+  // --------------------------------------------------------
+
+  if (
+    contieneAlguna(texto, [
+      "recetas",
+      "ingredientes",
+      "cocinar"
+    ])
+  ) {
+    return [
+      "🥗 Las recetas fueron diseñadas para ser prácticas y fáciles de preparar."
+    ].join("\n");
   }
 
-  if (contieneAlguna(t, [
-    "sirve para diabetes tipo 1",
-    "sirve para diabetes tipo 2",
-    "sirve para prediabetes",
-    "es para diabeticos",
-    "para quien es"
-  ])) {
-    return `Es una guía educativa para personas que desean mejorar y organizar su alimentación. 💙 No sustituye las indicaciones de un médico o profesional de salud.`;
+  // --------------------------------------------------------
+  // FACILIDAD
+  // --------------------------------------------------------
+
+  if (
+    contieneAlguna(texto, [
+      "es facil",
+      "es dificil",
+      "como se usa",
+      "puedo entenderlo"
+    ])
+  ) {
+    return [
+      "😊 El material utiliza un lenguaje sencillo y práctico.",
+      "",
+      "No necesitas conocimientos de nutrición para entenderlo."
+    ].join("\n");
   }
 
-  if (contieneAlguna(t, [
-    "tengo una duda",
-    "necesito ayuda",
-    "tengo un problema",
-    "problema con el pago",
-    "problema con la descarga",
-    "no recibi el material",
-    "soporte"
-  ])) {
-    return `Puedes escribirnos con confianza. 😊 Te ayudaremos con dudas relacionadas con el pago, la entrega o el acceso al material.`;
+  // --------------------------------------------------------
+  // BENEFICIOS
+  // --------------------------------------------------------
+
+  if (
+    contieneAlguna(texto, [
+      "beneficios",
+      "para que sirve",
+      "que aprendere"
+    ])
+  ) {
+    return [
+      "💙 Aprenderás a organizar mejor tus comidas, encontrar recetas saludables y realizar compras más inteligentes."
+    ].join("\n");
   }
 
-  if (contieneAlguna(t, [
-    "glucosa",
-    "azucar",
-    "control",
-    "energia",
-    "bienestar",
-    "familia",
-    "esperanza",
-    "confianza",
-    "salud",
-    "cambio"
-  ])) {
-    return `Entiendo 💙 Buscar más claridad y tranquilidad al organizar tu alimentación es una preocupación muy común. El material está pensado para darte una guía práctica sin sustituir la atención profesional.`;
-  }
+
 
   return null;
 }
 
-function buscarTexto(valor, profundidad = 0) {
-  if (profundidad > 8 || valor == null) return "";
+// ==========================================================
+// RUTAS
+// ==========================================================
 
-  if (typeof valor === "string") {
-    return valor.trim();
-  }
+app.get("/", (req, res) => {
+  return res
+    .status(200)
+    .send("Bot ventas activo ✅");
+});
 
-  if (Array.isArray(valor)) {
-    for (const item of valor) {
-      const r = buscarTexto(item, profundidad + 1);
-      if (r) return r;
-    }
-    return "";
-  }
-
-  if (typeof valor === "object") {
-    const claves = [
-      "texto",
-      "mensaje",
-      "message",
-      "text",
-      "input",
-      "user_message",
-      "last_text_input",
-      "lastTextInput",
-      "content"
-    ];
-
-    for (const clave of claves) {
-      if (Object.prototype.hasOwnProperty.call(valor, clave)) {
-        const r = buscarTexto(valor[clave], profundidad + 1);
-        if (r) return r;
-      }
-    }
-
-    for (const [clave, contenido] of Object.entries(valor)) {
-      if (/text|message|mensaje|input|content/i.test(clave)) {
-        const r = buscarTexto(contenido, profundidad + 1);
-        if (r) return r;
-      }
-    }
-
-    for (const contenido of Object.values(valor)) {
-      if (contenido && typeof contenido === "object") {
-        const r = buscarTexto(contenido, profundidad + 1);
-        if (r) return r;
-      }
-    }
-  }
-
-  return "";
-}
-
-function parsearBody(raw, contentType) {
-  const texto = String(raw || "").trim();
-  if (!texto) return {};
-
-  if (contentType.includes("application/json")) {
-    try {
-      return JSON.parse(texto);
-    } catch {
-      return { texto };
-    }
-  }
-
-  if (contentType.includes("application/x-www-form-urlencoded")) {
-    return Object.fromEntries(new URLSearchParams(texto));
-  }
-
+app.post("/mensaje", async (req, res) => {
   try {
-    return JSON.parse(texto);
-  } catch {
-    return { texto };
-  }
-}
+    const mensaje =
+      req.body?.texto ??
+      req.body?.mensaje ??
+      req.body?.message ??
+      "";
 
-function respuestaRespaldo(texto) {
-  const t = normalizarTexto(texto);
+    const textoUsuario =
+      String(mensaje).trim();
 
-  if (t.includes("comer") || t.includes("comida") || t.includes("alimentacion")) {
-    return `Entiendo 💙 Una de las dudas más comunes es saber qué comer y cómo organizar las comidas. El Mega Pack reúne una guía de alimentación, recetas y compras inteligentes para ayudarte a tener más claridad en el día a día.`;
-  }
+    console.log(
+      "Mensaje recibido:",
+      textoUsuario
+    );
 
-  if (t.includes("comprar") || t.includes("pagar") || t.includes("precio")) {
-    return `Claro 😊 El Mega Pack tiene un precio de $79 MXN y puedes pagarlo por transferencia bancaria o en efectivo.`;
-  }
-
-  return `Entiendo tu duda 💙 El Mega Pack está pensado para ayudarte a organizar mejor tu alimentación con una guía práctica, recetas y compras inteligentes. Si tu pregunta requiere un dato específico que no tengo confirmado, prefiero no inventarlo.`;
-}
-
-async function llamarOpenAI(texto) {
-  if (!OPENAI_API_KEY) {
-    return respuestaRespaldo(texto);
-  }
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5500);
-
-  try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        instructions: SYSTEM_PROMPT,
-        input: texto,
-        max_output_tokens: 160
-      }),
-      signal: controller.signal
-    });
-
-    if (!response.ok) {
-      console.error("OpenAI HTTP:", response.status);
-      return respuestaRespaldo(texto);
-    }
-
-    const data = await response.json();
-
-    if (typeof data.output_text === "string" && data.output_text.trim()) {
-      return data.output_text.trim();
-    }
-
-    const partes = [];
-    for (const item of data.output || []) {
-      for (const content of item.content || []) {
-        if (content.type === "output_text" && content.text) {
-          partes.push(content.text);
-        }
-      }
-    }
-
-    return partes.join("\n").trim() || respuestaRespaldo(texto);
-  } catch (error) {
-    console.error("OpenAI fallback:", error.name, error.message);
-    return respuestaRespaldo(texto);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-function enviarJSON(res, respuesta, intencion = "agente") {
-  const body = JSON.stringify({
-    respuesta: String(respuesta || ""),
-    ok: true,
-    intencion
-  });
-
-  res.writeHead(200, {
-    "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store",
-    "Access-Control-Allow-Origin": "*"
-  });
-
-  res.end(body);
-}
-
-const server = http.createServer(async (req, res) => {
-  try {
-    const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-
-    if (req.method === "OPTIONS") {
-      res.writeHead(204, {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type"
+    if (!textoUsuario) {
+      return res.json({
+        respuesta: [
+          "Estoy aquí para ayudarte 😊",
+          "",
+          "Puedes escribirme tu duda sobre el libro, la entrega o las formas de apoyo 🙏"
+        ].join("\n")
       });
-      return res.end();
     }
 
-    if (url.pathname === "/" || url.pathname === "/health") {
-      return enviarJSON(res, "VICA SYSTEMS ACTIVO ✅", "health");
-    }
-
-    if (url.pathname !== "/mensaje" && url.pathname !== "/mensaje/") {
-      return enviarJSON(res, "Ruta no encontrada.", "ruta");
-    }
-
-    let texto = "";
-
-    if (req.method === "GET") {
-      texto =
-        url.searchParams.get("texto") ||
-        url.searchParams.get("mensaje") ||
-        url.searchParams.get("message") ||
-        url.searchParams.get("text") ||
-        "";
-    } else if (req.method === "POST") {
-      const chunks = [];
-      let total = 0;
-
-      for await (const chunk of req) {
-        total += chunk.length;
-
-        if (total > 1024 * 1024) {
-          return enviarJSON(res, "Mensaje demasiado grande.", "error");
-        }
-
-        chunks.push(chunk);
-      }
-
-      const raw = Buffer.concat(chunks).toString("utf8");
-      const contentType = String(req.headers["content-type"] || "").toLowerCase();
-      const body = parsearBody(raw, contentType);
-      texto = buscarTexto(body);
-    } else {
-      return enviarJSON(res, "Método no permitido.", "error");
-    }
-
-    texto = String(texto || "").trim();
-
-    if (!texto) {
-      return enviarJSON(
-        res,
-        "Recibí tu mensaje, pero no pude identificar el texto. Escríbeme nuevamente y con gusto te respondo. 😊",
-        "mensaje_vacio"
-      );
-    }
-
-    console.log("Mensaje recibido:", "[sí]", "| longitud:", texto.length);
-
-    const directa = respuestaDirecta(texto);
+    const directa =
+      respuestaDirecta(textoUsuario);
 
     if (directa) {
-      return enviarJSON(res, directa, "faq");
+      const respuestaFinal =
+        limpiarRespuesta(directa);
+
+      console.log(
+        "Respuesta directa enviada:",
+        respuestaFinal
+      );
+
+      return res.json({
+        respuesta: respuestaFinal
+      });
     }
 
-    const respuestaIA = await llamarOpenAI(texto);
-    return enviarJSON(res, respuestaIA, "openai_o_respaldo");
+    const response =
+      await openai.responses.create({
+        model: "gpt-4.1-mini",
 
-  } catch (error) {
-    console.error("Error general:", error.name, error.message);
+        temperature: 0.4,
 
-    return enviarJSON(
-      res,
-      "Estoy aquí para ayudarte 💙 Escríbeme nuevamente tu duda sobre el Mega Pack y te respondo.",
-      "error_controlado"
+        input: [
+          {
+            role: "system",
+            content: [
+              {
+                type: "input_text",
+                text: SYSTEM_PROMPT
+              }
+            ]
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: textoUsuario
+              }
+            ]
+          }
+        ]
+      });
+
+    const respuestaIA =
+      response.output_text || "";
+
+    const respuestaFinal =
+      agregarCierre(respuestaIA);
+
+    console.log(
+      "Respuesta enviada:",
+      respuestaFinal
     );
+
+    return res.json({
+      respuesta: respuestaFinal
+    });
+  } catch (error) {
+    console.error(
+      "Error en /mensaje:",
+      error
+    );
+
+    return res.json({
+      respuesta: [
+        "Con mucho gusto te ayudo 😊",
+        "",
+        cierrePago()
+      ].join("\n")
+    });
   }
 });
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`VICA SYSTEMS activo en puerto ${PORT}`);
+app.listen(PORT, () => {
+  console.log(
+    `Servidor corriendo en puerto ${PORT}`
+  );
 });
