@@ -14,18 +14,47 @@ const openai = new OpenAI({
 });
 
 // ==========================================================
-// INFORMACIÓN OFICIAL
+// INFORMACIÓN OFICIAL - VICA SYSTEMS
+// FUNNEL PREPAGO
+// PRIMERO PAGA -> LISTO -> COMPROBANTE -> VALIDACIÓN -> ENTREGA
 // ==========================================================
 
 const DATOS_PAGO = {
   banco: "Spin by OXXO",
-  titular: "Francisco Camacho Sotelo",
-  clabe: "728969000160022558",
+  titular: "Víctor Adrián Candelaria",
+  clabe: "728969000180849818",
+  oxxo: "2242170100440082",
 
-  aportes: {
-    gratitud: 90,
-    proyecto: 150,
-    alcance: 200
+  precioPrincipal: 79,
+
+  aportacionesVoluntarias: {
+    gratitud: 80,
+    proyecto: 100,
+    especial: 150
+  },
+
+  precioUpsell: 70
+};
+
+const PRODUCTO = {
+  nombre: "Mega Pack de Alimentación para la Diabetes",
+  formato: "Digital en PDF",
+
+  bonos: [
+    "Recetario de Postres Saludables",
+    "Guía de Hábitos Saludables"
+  ],
+
+  upsell: {
+    nombre: "Pack Complementario",
+    precio: 70,
+    recursos: [
+      "Jugos y Batidos",
+      "Guía de Jugos Naturales",
+      "Guía de Compras",
+      "Resistencia a la Insulina",
+      "Registro de Glucometrías"
+    ]
   }
 };
 
@@ -34,69 +63,146 @@ const DATOS_PAGO = {
 // ==========================================================
 
 const SYSTEM_PROMPT = `
-Eres Isabella Rojas, asistente de soporte del proyecto
-Cuando Dios Habla.
+Eres Isabel Romero ❤️, asistente de atención y ventas de VICA SYSTEMS.
 
-Tu personalidad es amable, cálida, espiritual, paciente,
-respetuosa y humana.
+Atiendes por WhatsApp a personas interesadas en el
+"Mega Pack de Alimentación para la Diabetes".
+
+Tu personalidad es amable, cálida, paciente, cercana,
+clara, respetuosa y humana.
 
 Responde como una persona real por WhatsApp.
 
 REGLAS DE ESTILO:
 
-- Responde en español.
-- Utiliza párrafos cortos.
-- Deja una línea en blanco entre ideas.
-- Usa emojis cálidos con moderación.
-- Evita bloques largos de texto.
+- Responde siempre en español.
+- Utiliza mensajes breves y fáciles de leer.
+- Usa párrafos cortos.
+- Deja una línea en blanco entre ideas cuando ayude a la lectura.
+- Usa emojis con moderación.
 - No repitas información innecesariamente.
 - No saludes nuevamente si la conversación ya comenzó.
-- No hagas preguntas innecesarias.
 - Responde directamente la duda del usuario.
-- No uses Markdown como encabezados con símbolos #.
-- No inventes enlaces, promociones, cuentas ni información.
+- No hagas preguntas innecesarias.
+- No inventes promociones, cuentas, enlaces ni información.
 - No digas que eres una inteligencia artificial.
-- No presiones a la persona para pagar.
-- El apoyo es voluntario.
-- Nunca presentes el apoyo como una compra obligatoria.
+- No uses lenguaje médico alarmista.
+- No prometas curar, revertir, controlar o tratar la diabetes.
+- No sustituyas indicaciones de médicos o nutriólogos.
+- Si una duda depende de la situación médica personal,
+  recomienda consultar a su profesional de salud.
 
-INFORMACIÓN OFICIAL DEL PROYECTO:
+REGLA PRINCIPAL DEL FUNNEL:
 
-El material principal es un libro digital en formato PDF
-llamado "Cuando Dios Habla".
+ESTA ES UNA OFERTA PREPAGO.
 
-El PDF ya fue enviado previamente dentro de la conversación
-de WhatsApp.
+PRIMERO SE REALIZA EL PAGO DE $79 MXN.
+DESPUÉS LA PERSONA ESCRIBE LISTO.
+DESPUÉS ENVÍA EL COMPROBANTE.
+SE VALIDA EL PAGO.
+FINALMENTE SE ENTREGA EL MATERIAL DIGITAL.
 
-El contenido es bíblico y no pertenece exclusivamente a una
-religión o denominación.
+NUNCA digas:
+- que el material ya fue entregado si todavía no existe pago confirmado;
+- que puede revisar el material antes de pagar;
+- que los $79 son una aportación o donación;
+- que la compra principal es voluntaria.
 
-Los montos de apoyo sugeridos son:
+INFORMACIÓN OFICIAL DE LA OFERTA PRINCIPAL:
 
-- $70 MXN como muestra de gratitud.
-- $150 MXN para apoyar el proyecto.
-- $200 MXN para ayudarnos a llegar a más personas.
+Producto:
+Mega Pack de Alimentación para la Diabetes.
 
-La persona puede realizar su apoyo por:
+Precio único de compra:
+$79 MXN.
+
+Formato:
+Digital en PDF.
+
+Contenido general:
+- Ideas para desayunos.
+- Ideas para comidas.
+- Ideas para cenas.
+- Snacks.
+- Recetas prácticas.
+- Recursos para tener más variedad y organización en la alimentación.
+
+Bonos incluidos:
+- Recetario de Postres Saludables.
+- Guía de Hábitos Saludables.
+
+MÉTODOS DE PAGO:
 
 - Transferencia bancaria.
 - Depósito en OXXO.
 
-DATOS PARA TRANSFERENCIA:
+DATOS DE TRANSFERENCIA:
 
 Banco: Spin by OXXO
-Titular: Francisco Camacho Sotelo
-CLABE: 728969000160022558
+Titular: Víctor Adrián Candelaria
+CLABE: 728969000180849818
 
-Después de realizar el apoyo, la persona debe enviar en este
-mismo chat la imagen de su comprobante.
+DEPÓSITO EN OXXO:
 
-El apoyo puede hacerse después, mañana o cuando la persona
-tenga oportunidad. No existe ningún problema por esperar.
+Número: 2242170100440082
+Titular: Víctor Adrián Candelaria
 
-Cuando respondas una pregunta concreta, no repitas todo el
-discurso de venta. Contesta únicamente lo necesario de manera
-clara, amable, ordenada y visual.
+PROCESO DEL COMPROBANTE:
+
+1. La persona realiza su pago.
+2. Después escribe LISTO.
+3. Espera la respuesta del flujo.
+4. Envía la imagen o fotografía del comprobante.
+5. Se valida el pago.
+6. Una vez confirmado, se entrega el Mega Pack y sus bonos.
+
+SI LA PERSONA DESEA PAGAR DESPUÉS:
+
+Responde con amabilidad.
+No presiones.
+Aclara que el material quedará pendiente
+y se entregará cuando el pago de $79 MXN sea confirmado.
+
+APORTACIONES VOLUNTARIAS:
+
+Después de explicar claramente que el precio del producto es $79 MXN,
+puedes mencionar, SOLO cuando sea apropiado, que existe la opción
+de apoyar voluntariamente el proyecto con una aportación adicional.
+
+Opciones voluntarias:
+- $80 MXN: gesto de gratitud.
+- $100 MXN: apoyo para seguir creando nuevas guías y recursos.
+- $150 MXN: apoyo especial para continuar desarrollando contenido.
+
+IMPORTANTE:
+- La aportación es completamente opcional.
+- No es necesaria para recibir el producto.
+- No sustituye el pago de $79 MXN.
+- Nunca hagas sentir culpa, presión u obligación.
+- Preséntala con agradecimiento y relacionándola con el valor del trabajo,
+  el tiempo de investigación, organización y creación de materiales,
+  y con el deseo de seguir produciendo recursos útiles para la comunidad.
+- Si la persona solo quiere pagar $79 MXN, respétalo completamente.
+
+UPSELL POSTCOMPRA:
+
+Después de la compra principal existe un Pack Complementario
+opcional por $70 MXN.
+
+Incluye:
+- Jugos y Batidos.
+- Guía de Jugos Naturales.
+- Guía de Compras.
+- Resistencia a la Insulina.
+- Registro de Glucometrías.
+
+El upsell es adicional y no forma parte
+del Mega Pack principal de $79 MXN.
+
+Cuando respondas una pregunta concreta,
+NO repitas todo el discurso de venta.
+Contesta solamente lo necesario,
+de forma clara, amable, breve y visual.
 `;
 
 // ==========================================================
@@ -117,12 +223,6 @@ function contieneAlguna(texto, frases) {
   return frases.some((frase) => texto.includes(frase));
 }
 
-function elegirAleatoria(opciones) {
-  return opciones[
-    Math.floor(Math.random() * opciones.length)
-  ];
-}
-
 function limpiarRespuesta(valor) {
   return String(valor ?? "")
     .replace(/\r\n/g, "\n")
@@ -139,12 +239,26 @@ function limpiarRespuesta(valor) {
 
 function cierrePago() {
   return [
-    "💌 Para apoyar este proyecto espiritual puedes elegir:",
+    `💙 El Mega Pack tiene un precio de $${DATOS_PAGO.precioPrincipal} MXN.`,
+    "",
+    "Puedes realizar tu pago mediante:",
     "",
     "🏦 Transferencia bancaria",
     "🏪 Depósito en OXXO",
     "",
-    "¿Cuál opción prefieres? 🙏"
+    "¿Cuál método prefieres?"
+  ].join("\n");
+}
+
+function cierreAportacionVoluntaria() {
+  return [
+    "💙 Y si además deseas apoyar voluntariamente este proyecto, puedes hacerlo con:",
+    "",
+    `💖 $${DATOS_PAGO.aportacionesVoluntarias.gratitud} MXN — gesto de gratitud`,
+    `💗 $${DATOS_PAGO.aportacionesVoluntarias.proyecto} MXN — apoyo para seguir creando nuevas guías y recursos`,
+    `💞 $${DATOS_PAGO.aportacionesVoluntarias.especial} MXN — apoyo especial al desarrollo de nuevo contenido`,
+    "",
+    "Es completamente opcional. Con tu pago de $79 MXN recibes tu material completo. 🙏"
   ].join("\n");
 }
 
@@ -155,11 +269,11 @@ function agregarCierre(respuesta) {
     return cierrePago();
   }
 
-  const normalizada =
-    normalizarTexto(respuestaLimpia);
+  const normalizada = normalizarTexto(respuestaLimpia);
 
   const yaIncluyeCierre =
-    normalizada.includes("cual opcion prefieres") ||
+    normalizada.includes("cual metodo prefieres") ||
+    normalizada.includes("elige tu metodo de pago") ||
     (
       normalizada.includes("transferencia bancaria") &&
       normalizada.includes("deposito en oxxo")
@@ -172,71 +286,118 @@ function agregarCierre(respuesta) {
   return `${respuestaLimpia}\n\n${cierrePago()}`;
 }
 
+function instruccionesComprobante() {
+  return [
+    "📸 Para validar correctamente tu pago:",
+    "",
+    "1️⃣ Envíame primero la palabra LISTO ✅",
+    "2️⃣ Espera mi respuesta.",
+    "3️⃣ Después envíame la foto o captura de tu comprobante.",
+    "",
+    "Una vez confirmado el pago, continuamos con la entrega de tu material digital. 💙"
+  ].join("\n");
+}
+
 function respuestaCuenta() {
   return [
-    "Claro 😊 Estos son los datos para realizar tu apoyo por transferencia:",
+    "Claro 😊 Estos son los datos para realizar tu pago por transferencia:",
     "",
     `🏦 Banco: ${DATOS_PAGO.banco}`,
     `👤 Titular: ${DATOS_PAGO.titular}`,
     `🔢 CLABE: ${DATOS_PAGO.clabe}`,
     "",
-    "Cuando realices tu apoyo, envíame aquí la imagen del comprobante y con mucho gusto te entregaré tus regalos 🎁🙏"
+    instruccionesComprobante()
   ].join("\n");
 }
 
 function respuestaPagoPosterior() {
   return [
-    "Claro 😊 No hay ningún problema, puedes realizar tu apoyo después.",
+    "Claro 😊 No hay problema si deseas realizar tu pago más tarde.",
     "",
-    "Cuando estés listo, estos son los datos para transferencia:",
+    `Tu Mega Pack de $${DATOS_PAGO.precioPrincipal} MXN quedará pendiente y se entregará una vez que confirmemos el pago.`,
     "",
-    `🏦 Banco: ${DATOS_PAGO.banco}`,
-    `👤 Titular: ${DATOS_PAGO.titular}`,
-    `🔢 CLABE: ${DATOS_PAGO.clabe}`,
-    "",
-    "Después solo envíame aquí la imagen del comprobante para entregarte tus regalos 🎁",
-    "",
-    "Que Dios te bendiga 🙏❤️"
+    "Cuando estés listo(a), escríbeme y continuamos con mucho gusto. 💙"
   ].join("\n");
 }
 
 function respuestaOxxo() {
   return [
-    "Claro 😊 También puedes realizar tu apoyo mediante depósito en OXXO.",
+    "Claro 😊 Puedes realizar tu pago mediante depósito en OXXO:",
     "",
-    "Utiliza el código o QR de Spin que te compartimos anteriormente en esta conversación 🏪",
+    `🏪 Número: ${DATOS_PAGO.oxxo}`,
+    `👤 Titular: ${DATOS_PAGO.titular}`,
     "",
-    "Cuando termines, envíame aquí una fotografía completa y legible del ticket para poder entregarte tus regalos 🎁🙏"
-  ].join("\n");
-}
-
-function respuestaReligion() {
-  return [
-    "El contenido está basado en la Biblia 🙏📖",
+    "Conserva tu ticket completo y legible.",
     "",
-    "No pertenece exclusivamente a una religión o denominación. Fue preparado para cualquier persona que quiera acercarse más a Dios y profundizar en Su Palabra ❤️"
+    instruccionesComprobante()
   ].join("\n");
 }
 
 function respuestaEntrega() {
   return [
-    "El libro es completamente digital y se entrega en formato PDF 📖✨",
+    `📲 El ${PRODUCTO.nombre} es completamente digital y se entrega en formato PDF.`,
     "",
-    "Ya fue enviado anteriormente en esta misma conversación. Puedes buscarlo un poco más arriba en el chat y descargarlo directamente en tu teléfono 📲"
+    "Primero confirmamos tu pago de $79 MXN y después recibes el material directamente por WhatsApp. 💙"
   ].join("\n");
 }
 
 function respuestaPrecio() {
   return [
-    "El libro digital ya fue entregado y el apoyo al proyecto es completamente voluntario 🙏",
+    `💙 El ${PRODUCTO.nombre} tiene un precio único de $${DATOS_PAGO.precioPrincipal} MXN.`,
     "",
-    "Puedes elegir la cantidad con la que te sientas cómodo:",
+    "Incluye la colección principal y los bonos de la oferta:",
     "",
-    `💛 $${DATOS_PAGO.aportes.gratitud} MXN como muestra de gratitud`,
-    `🌱 $${DATOS_PAGO.aportes.proyecto} MXN para apoyar el proyecto`,
-    `✨ $${DATOS_PAGO.aportes.alcance} MXN para ayudarnos a llegar a más personas`,
+    `🎁 ${PRODUCTO.bonos[0]}`,
+    `🎁 ${PRODUCTO.bonos[1]}`,
     "",
     cierrePago()
+  ].join("\n");
+}
+
+function respuestaContenido() {
+  return [
+    "🥗 El Mega Pack reúne material práctico para darte más ideas y variedad:",
+    "",
+    "✅ Desayunos",
+    "✅ Comidas",
+    "✅ Cenas",
+    "✅ Snacks y preparaciones prácticas",
+    "",
+    "🎁 Además incluye:",
+    `✅ ${PRODUCTO.bonos[0]}`,
+    `✅ ${PRODUCTO.bonos[1]}`,
+    "",
+    `Todo por $${DATOS_PAGO.precioPrincipal} MXN.`
+  ].join("\n");
+}
+
+function respuestaUpsell() {
+  return [
+    `🎁 Después de tu compra principal puedes agregar el ${PRODUCTO.upsell.nombre} por $${PRODUCTO.upsell.precio} MXN.`,
+    "",
+    "Incluye 5 recursos adicionales:",
+    "",
+    ...PRODUCTO.upsell.recursos.map((r) => `✅ ${r}`),
+    "",
+    "Es completamente opcional y no sustituye el Mega Pack principal."
+  ].join("\n");
+}
+
+function respuestaAportacion() {
+  return [
+    "💙 Primero quiero aclararte algo importante:",
+    "",
+    `El Mega Pack tiene un precio fijo de $${DATOS_PAGO.precioPrincipal} MXN y con ese pago recibes todo tu material.`,
+    "",
+    "Si además deseas apoyar voluntariamente el proyecto, lo agradecemos muchísimo.",
+    "",
+    "Cada guía requiere tiempo de investigación, organización y preparación, y ese apoyo nos permite seguir creando materiales que puedan ser útiles en el día a día de más personas.",
+    "",
+    `💖 $${DATOS_PAGO.aportacionesVoluntarias.gratitud} MXN — gesto de gratitud`,
+    `💗 $${DATOS_PAGO.aportacionesVoluntarias.proyecto} MXN — apoyo al proyecto`,
+    `💞 $${DATOS_PAGO.aportacionesVoluntarias.especial} MXN — apoyo especial`,
+    "",
+    "🙏 Es totalmente opcional. No necesitas aportar más para recibir tu compra."
   ].join("\n");
 }
 
@@ -245,11 +406,35 @@ function respuestaPrecio() {
 // ==========================================================
 
 function respuestaDirecta(mensajeOriginal) {
-  const texto =
-    normalizarTexto(mensajeOriginal);
+  const texto = normalizarTexto(mensajeOriginal);
 
   if (!texto) {
     return null;
+  }
+
+  // --------------------------------------------------------
+  // LISTO / COMPROBANTE
+  // --------------------------------------------------------
+
+  if (
+    texto === "listo" ||
+    contieneAlguna(texto, [
+      "ya pague",
+      "ya transferi",
+      "ya deposite",
+      "hice el pago",
+      "hice la transferencia",
+      "hice el deposito",
+      "voy a mandar comprobante",
+      "mandar comprobante",
+      "enviar comprobante"
+    ])
+  ) {
+    return [
+      "Perfecto 💙",
+      "",
+      "Ahora sí, envíame la foto o captura completa de tu comprobante para continuar con la validación."
+    ].join("\n");
   }
 
   // --------------------------------------------------------
@@ -284,6 +469,28 @@ function respuestaDirecta(mensajeOriginal) {
   }
 
   // --------------------------------------------------------
+  // APORTACIÓN VOLUNTARIA
+  // --------------------------------------------------------
+
+  if (
+    contieneAlguna(texto, [
+      "quiero apoyar",
+      "quiero aportar",
+      "aportacion",
+      "aportacion voluntaria",
+      "apoyo voluntario",
+      "puedo dar mas",
+      "puedo pagar mas",
+      "80 pesos",
+      "100 pesos",
+      "150 pesos",
+      "apoyar el proyecto"
+    ])
+  ) {
+    return respuestaAportacion();
+  }
+
+  // --------------------------------------------------------
   // DATOS BANCARIOS
   // --------------------------------------------------------
 
@@ -298,15 +505,14 @@ function respuestaDirecta(mensajeOriginal) {
       "a que cuenta",
       "en que cuenta",
       "donde transfiero",
-      "donde deposito",
       "cual es la cuenta",
       "cual cuenta",
       "pasame la cuenta",
       "mandame la cuenta",
-      "clave interbancaria"
+      "clave interbancaria",
+      "clabe"
     ]) ||
-    texto === "cuenta" ||
-    texto === "clabe";
+    texto === "cuenta";
 
   if (preguntaCuenta) {
     return respuestaCuenta();
@@ -335,58 +541,7 @@ function respuestaDirecta(mensajeOriginal) {
   }
 
   // --------------------------------------------------------
-  // RELIGIÓN
-  // --------------------------------------------------------
-
-  if (
-    contieneAlguna(texto, [
-      "catolico",
-      "catolica",
-      "cristiano",
-      "cristiana",
-      "religion",
-      "religioso",
-      "religiosa",
-      "evangelico",
-      "evangelica",
-      "denominacion",
-      "de que iglesia"
-    ])
-  ) {
-    return respuestaReligion();
-  }
-
-  // --------------------------------------------------------
-  // ENTREGA, PDF O PRODUCTO FÍSICO
-  // --------------------------------------------------------
-
-  if (
-    contieneAlguna(texto, [
-      "es fisico",
-      "libro fisico",
-      "producto fisico",
-      "formato fisico",
-      "es digital",
-      "libro digital",
-      "es pdf",
-      "archivo pdf",
-      "como lo recibo",
-      "cuando lo recibo",
-      "donde lo recibo",
-      "como se entrega",
-      "donde esta el libro",
-      "no encuentro el libro",
-      "no me llego",
-      "no lo recibi",
-      "envio",
-      "domicilio"
-    ])
-  ) {
-    return respuestaEntrega();
-  }
-
-  // --------------------------------------------------------
-  // PRECIO O MONTO
+  // PRECIO PRINCIPAL
   // --------------------------------------------------------
 
   if (
@@ -396,39 +551,14 @@ function respuestaDirecta(mensajeOriginal) {
       "que precio",
       "precio",
       "costo",
+      "79 pesos",
       "cuanto pago",
       "cuanto deposito",
       "cuanto transfiero",
-      "cuanto hay que dar",
-      "cuanto debo pagar",
-      "de cuanto es el apoyo",
-      "cantidad"
+      "cuanto debo pagar"
     ])
   ) {
     return respuestaPrecio();
-  }
-
-  // --------------------------------------------------------
-  // PRECIO
-  // --------------------------------------------------------
-
-  if (
-    contieneAlguna(texto, [
-      "cuanto cuesta",
-      "cuanto vale",
-      "precio",
-      "costo",
-      "79 pesos",
-      "cuanto pago"
-    ])
-  ) {
-    return [
-      "💙 El Mega Pack completo tiene un precio de $79 MXN.",
-      "",
-      "Incluye el Plan Integral de Alimentación, el Recetario Saludable y la Guía de Compras Inteligentes.",
-      "",
-      "🎁 Además recibirás todos los bonos de la oferta."
-    ].join("\n");
   }
 
   // --------------------------------------------------------
@@ -441,24 +571,15 @@ function respuestaDirecta(mensajeOriginal) {
       "que contiene",
       "que trae",
       "contenido",
-      "mega pack"
+      "mega pack",
+      "que voy a recibir"
     ])
   ) {
-    return [
-      "🥗 El Mega Pack incluye:",
-      "",
-      "✅ Plan Integral de Alimentación.",
-      "✅ Recetario Saludable.",
-      "✅ Guía de Compras Inteligentes.",
-      "",
-      "🎁 Bonos:",
-      "✅ Guía de Remedios Naturales y Hábitos Saludables.",
-      "✅ Recetario de Postres Saludables."
-    ].join("\n");
+    return respuestaContenido();
   }
 
   // --------------------------------------------------------
-  // PAGO
+  // FORMAS DE PAGO
   // --------------------------------------------------------
 
   if (
@@ -466,54 +587,76 @@ function respuestaDirecta(mensajeOriginal) {
       "como pago",
       "formas de pago",
       "metodos de pago",
-      "transferencia",
-      "oxxo"
+      "metodo de pago",
+      "quiero pagar"
     ])
   ) {
-    return [
-      "💙 Puedes realizar tu pago mediante:",
-      "",
-      "🏦 Transferencia bancaria.",
-      "🏪 Depósito en OXXO.",
-      "",
-      "Después envía tu comprobante junto con la palabra LISTO ✅"
-    ].join("\n");
+    return cierrePago();
   }
 
   // --------------------------------------------------------
-  // ENTREGA
+  // ENTREGA / PDF
   // --------------------------------------------------------
 
   if (
     contieneAlguna(texto, [
-      "como lo recibo",
-      "cuando lo recibo",
+      "es fisico",
+      "producto fisico",
       "es digital",
       "es pdf",
-      "entrega"
+      "archivo pdf",
+      "como lo recibo",
+      "cuando lo recibo",
+      "donde lo recibo",
+      "como se entrega",
+      "entrega",
+      "envio",
+      "domicilio"
     ])
   ) {
-    return [
-      "📲 El Mega Pack se entrega completamente en formato PDF.",
-      "",
-      "Después de confirmar tu pago recibirás el material digital."
-    ].join("\n");
+    return respuestaEntrega();
   }
 
   // --------------------------------------------------------
-  // POSTRES
+  // BONOS / POSTRES
   // --------------------------------------------------------
 
   if (
     contieneAlguna(texto, [
+      "bonos",
       "postres",
       "incluye postres",
-      "recetas de postres"
+      "recetas de postres",
+      "habitos saludables"
     ])
   ) {
     return [
-      "🍰 Sí, recibirás un Recetario de Postres Saludables como bono especial."
+      "🎁 Sí. La oferta incluye:",
+      "",
+      `🍰 ${PRODUCTO.bonos[0]}`,
+      `🌱 ${PRODUCTO.bonos[1]}`,
+      "",
+      "Se entregan junto con tu material después de confirmar el pago."
     ].join("\n");
+  }
+
+  // --------------------------------------------------------
+  // UPSELL / PACK DE $70
+  // --------------------------------------------------------
+
+  if (
+    contieneAlguna(texto, [
+      "pack complementario",
+      "70 pesos",
+      "otro pack",
+      "paquete adicional",
+      "producto adicional",
+      "jugos y batidos",
+      "registro de glucometrias",
+      "resistencia a la insulina"
+    ])
+  ) {
+    return respuestaUpsell();
   }
 
   // --------------------------------------------------------
@@ -528,9 +671,9 @@ function respuestaDirecta(mensajeOriginal) {
     ])
   ) {
     return [
-      "🍎 Las frutas pueden formar parte de una alimentación organizada.",
+      "🍎 Las frutas pueden formar parte de una alimentación equilibrada.",
       "",
-      "Las cantidades adecuadas pueden variar según cada persona y las indicaciones de su profesional de salud."
+      "La cantidad y elección adecuada puede variar según cada persona, sus medicamentos y las indicaciones de su profesional de salud."
     ].join("\n");
   }
 
@@ -546,30 +689,34 @@ function respuestaDirecta(mensajeOriginal) {
     ])
   ) {
     return [
-      "💙 El objetivo no es prohibir alimentos de forma general.",
+      "💙 No se trata de prohibir alimentos de forma general.",
       "",
-      "Las porciones pueden variar según cada persona y su alimentación."
+      "Las porciones y combinaciones adecuadas pueden variar según cada persona. Si tienes una indicación médica específica, conviene seguirla."
     ].join("\n");
   }
 
   // --------------------------------------------------------
-  // RECETAS
+  // RECETAS / INGREDIENTES
   // --------------------------------------------------------
 
   if (
     contieneAlguna(texto, [
       "recetas",
       "ingredientes",
-      "cocinar"
+      "cocinar",
+      "son faciles",
+      "son dificiles"
     ])
   ) {
     return [
-      "🥗 Las recetas fueron diseñadas para ser prácticas y fáciles de preparar."
+      "🥗 El material reúne distintas recetas e ideas para ayudarte a tener más opciones en desayunos, comidas, cenas y snacks.",
+      "",
+      "Encontrarás preparaciones de diferentes niveles de dificultad para que puedas elegir las que mejor se adapten a ti."
     ].join("\n");
   }
 
   // --------------------------------------------------------
-  // FACILIDAD
+  // FACILIDAD DE USO
   // --------------------------------------------------------
 
   if (
@@ -581,9 +728,9 @@ function respuestaDirecta(mensajeOriginal) {
     ])
   ) {
     return [
-      "😊 El material utiliza un lenguaje sencillo y práctico.",
+      "😊 El material está organizado para que puedas consultarlo de forma práctica desde tu celular.",
       "",
-      "No necesitas conocimientos de nutrición para entenderlo."
+      "Puedes ir directamente a la sección o receta que necesites sin tener que leer todo de principio a fin."
     ].join("\n");
   }
 
@@ -599,11 +746,11 @@ function respuestaDirecta(mensajeOriginal) {
     ])
   ) {
     return [
-      "💙 Aprenderás a organizar mejor tus comidas, encontrar recetas saludables y realizar compras más inteligentes."
+      "💙 El objetivo del material es darte más ideas, variedad y organización al momento de preparar tus alimentos.",
+      "",
+      "No sustituye la orientación de tu médico o nutriólogo."
     ].join("\n");
   }
-
-
 
   return null;
 }
@@ -639,7 +786,7 @@ app.post("/mensaje", async (req, res) => {
         respuesta: [
           "Estoy aquí para ayudarte 😊",
           "",
-          "Puedes escribirme tu duda sobre el libro, la entrega o las formas de apoyo 🙏"
+          "Puedes escribirme tu duda sobre el Mega Pack, el pago o la entrega."
         ].join("\n")
       });
     }
