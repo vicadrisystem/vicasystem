@@ -119,13 +119,17 @@ $79 MXN.
 Formato:
 Digital en PDF.
 
-Contenido general:
-- Ideas para desayunos.
-- Ideas para comidas.
-- Ideas para cenas.
-- Snacks.
-- Recetas prácticas.
-- Recursos para tener más variedad y organización en la alimentación.
+Contenido principal:
+- Plan Integral de Alimentación.
+- Recetario Saludable con ideas para desayunos, comidas, cenas y snacks.
+- Guía de Compras Inteligentes para orientar la organización de las compras y selección de alimentos.
+
+El material está pensado como recurso educativo y práctico para dar más variedad,
+organización e ideas en la alimentación diaria.
+
+No afirmes que una receta, fruta o alimento específico es adecuado para todas las personas.
+Las porciones y necesidades individuales pueden variar.
+
 
 Bonos incluidos:
 - Recetario de Postres Saludables.
@@ -408,348 +412,286 @@ function respuestaAportacion() {
 function respuestaDirecta(mensajeOriginal) {
   const texto = normalizarTexto(mensajeOriginal);
 
-  if (!texto) {
-    return null;
-  }
+  if (!texto) return null;
 
-  // --------------------------------------------------------
-  // LISTO / COMPROBANTE
-  // --------------------------------------------------------
-
+  // ========================================================
+  // COMPROBANTE
+  // ========================================================
   if (
     texto === "listo" ||
     contieneAlguna(texto, [
-      "ya pague",
-      "ya transferi",
-      "ya deposite",
-      "hice el pago",
-      "hice la transferencia",
-      "hice el deposito",
-      "voy a mandar comprobante",
-      "mandar comprobante",
-      "enviar comprobante"
+      "ya pague", "ya transferi", "ya deposite",
+      "hice el pago", "hice la transferencia", "hice el deposito"
     ])
   ) {
     return [
       "Perfecto 💙",
       "",
-      "Ahora sí, envíame la foto o captura completa de tu comprobante para continuar con la validación."
+      "Ahora sí, envíame la foto o captura completa de tu comprobante para continuar con la validación.",
+      "",
+      "En cuanto confirmemos tu pago, seguimos con la entrega de tu Mega Pack y sus bonos. 📲✨"
     ].join("\n");
   }
 
-  // --------------------------------------------------------
-  // PAGAR DESPUÉS
-  // Debe evaluarse antes de la intención genérica de pago.
-  // --------------------------------------------------------
-
-  const preguntaPagoPosterior =
-    contieneAlguna(texto, [
-      "pagar despues",
-      "pago despues",
-      "depositar despues",
-      "transferir despues",
-      "hacerlo despues",
-      "puedo hacerlo despues",
-      "puedo pagar manana",
-      "pagar manana",
-      "pago manana",
-      "depositar manana",
-      "transferir manana",
-      "lo hago manana",
-      "mas tarde",
-      "otro dia",
-      "la proxima semana",
-      "cuando tenga dinero"
-    ]) ||
-    texto === "despues" ||
-    texto === "manana";
-
-  if (preguntaPagoPosterior) {
-    return respuestaPagoPosterior();
-  }
-
-  // --------------------------------------------------------
-  // APORTACIÓN VOLUNTARIA
-  // --------------------------------------------------------
-
+  // ========================================================
+  // PRECIO — DISPARADOR MANYCHAT
+  // ========================================================
   if (
     contieneAlguna(texto, [
-      "quiero apoyar",
-      "quiero aportar",
-      "aportacion",
-      "aportacion voluntaria",
-      "apoyo voluntario",
-      "puedo dar mas",
-      "puedo pagar mas",
-      "80 pesos",
-      "100 pesos",
-      "150 pesos",
-      "apoyar el proyecto"
+      "precio", "costo", "cuanto cuesta", "cuanto vale",
+      "79 pesos", "cuanto pago", "cuanto debo pagar"
+    ])
+  ) {
+    return [
+      "💙 El Mega Pack completo tiene un precio único de $79 MXN.",
+      "",
+      "Por ese precio recibes el material principal con ideas para organizar tus comidas, recetas y recursos prácticos, además de tus bonos. 🥗📚",
+      "",
+      "Primero realizas tu pago y, una vez confirmado, te entregamos todo el material digital por WhatsApp.",
+      "",
+      "👇 Puedes pagar por transferencia bancaria o depósito en OXXO."
+    ].join("\n");
+  }
+
+  // ========================================================
+  // CONTENIDO — DISPARADOR MANYCHAT
+  // ========================================================
+  if (
+    contieneAlguna(texto, [
+      "contenido", "que incluye", "que contiene",
+      "que trae", "mega pack", "que voy a recibir"
+    ])
+  ) {
+    return [
+      "🥗 El Mega Pack reúne en un solo lugar recursos para que tengas más opciones y menos dudas al organizar tu alimentación.",
+      "",
+      "📘 Plan Integral de Alimentación",
+      "🍽️ Recetario con ideas para desayunos, comidas, cenas y snacks",
+      "🛒 Guía de Compras Inteligentes",
+      "",
+      "🎁 Además incluye un Recetario de Postres Saludables y una Guía de Hábitos Saludables.",
+      "",
+      "💙 Todo el paquete cuesta $79 MXN. Después de confirmar tu pago te entregamos el material digital por WhatsApp."
+    ].join("\n");
+  }
+
+  // ========================================================
+  // PAGO — DISPARADOR MANYCHAT
+  // ========================================================
+  if (
+    contieneAlguna(texto, [
+      "pago", "como pago", "formas de pago", "metodos de pago",
+      "metodo de pago", "quiero pagar"
+    ])
+  ) {
+    return [
+      "💙 Puedes realizar el pago de $79 MXN de la forma que te resulte más cómoda:",
+      "",
+      "🏦 Transferencia bancaria",
+      "🏪 Depósito en OXXO",
+      "",
+      "Después de pagar, envíame primero la palabra LISTO ✅, espera mi respuesta y enseguida manda tu comprobante.",
+      "",
+      "📲 Una vez validado, continuamos con la entrega de todo tu material."
+    ].join("\n");
+  }
+
+  // ========================================================
+  // ENTREGA — DISPARADOR MANYCHAT
+  // ========================================================
+  if (
+    contieneAlguna(texto, [
+      "entrega", "como lo recibo", "cuando lo recibo",
+      "es digital", "es pdf", "archivo pdf", "donde lo recibo"
+    ])
+  ) {
+    return [
+      "📲 Todo el Mega Pack es digital y se entrega en formato PDF directamente por WhatsApp.",
+      "",
+      "La dinámica es sencilla: primero realizas tu pago de $79 MXN, envías LISTO ✅ y tu comprobante; después de validarlo te entregamos el material y los bonos.",
+      "",
+      "💙 Así puedes guardarlo en tu celular y consultarlo cuando lo necesites."
+    ].join("\n");
+  }
+
+  // ========================================================
+  // POSTRES — DISPARADOR MANYCHAT
+  // ========================================================
+  if (
+    contieneAlguna(texto, [
+      "postres", "incluye postres", "recetas de postres",
+      "recetario de postres", "algo dulce"
+    ])
+  ) {
+    return [
+      "🍰 Sí. La oferta incluye un Recetario de Postres Saludables como bono.",
+      "",
+      "La idea es que también tengas alternativas cuando quieras preparar algo diferente y no sentir que cuidar tu alimentación significa renunciar por completo a los postres. 💙",
+      "",
+      "🎁 El bono viene incluido dentro de tu compra de $79 MXN y se entrega después de confirmar el pago."
+    ].join("\n");
+  }
+
+  // ========================================================
+  // FRUTAS — DISPARADOR MANYCHAT
+  // ========================================================
+  if (
+    contieneAlguna(texto, [
+      "frutas", "que frutas puedo comer", "puedo comer fruta",
+      "platano", "mango", "uvas", "manzana"
+    ])
+  ) {
+    return [
+      "🍎 Sí, las frutas pueden formar parte de una alimentación organizada.",
+      "",
+      "El material te ayuda a tener más orientación e ideas para elegir y combinar tus alimentos, pero las porciones adecuadas pueden variar según cada persona y las indicaciones de su profesional de salud.",
+      "",
+      "💙 Si lo que buscas es dejar de sentir que todo está prohibido y tener más opciones para organizarte, el Mega Pack puede servirte como recurso práctico. Está disponible por $79 MXN."
+    ].join("\n");
+  }
+
+  // ========================================================
+  // COMIDAS — DISPARADOR MANYCHAT
+  // ========================================================
+  if (
+    contieneAlguna(texto, [
+      "comidas", "comida", "que puedo comer", "que preparo",
+      "desayunos", "cenas", "snacks", "tortilla", "pan", "arroz"
+    ])
+  ) {
+    return [
+      "🥗 Justamente uno de los objetivos del material es ayudarte cuando aparece la pregunta: “¿qué preparo hoy?”",
+      "",
+      "Encontrarás ideas para desayunos, comidas, cenas y snacks, para que tengas más variedad y puedas organizar mejor tus opciones del día a día. 📚",
+      "",
+      "💙 No se trata de decir que un alimento está prohibido para todos; las porciones dependen de cada persona.",
+      "",
+      "El Mega Pack completo cuesta $79 MXN y lo recibes después de confirmar tu pago."
+    ].join("\n");
+  }
+
+  // ========================================================
+  // RECETAS — DISPARADOR MANYCHAT
+  // ========================================================
+  if (
+    contieneAlguna(texto, [
+      "recetas", "ingredientes", "cocinar",
+      "recetas faciles", "ingredientes faciles"
+    ])
+  ) {
+    return [
+      "🍽️ Sí. El Mega Pack incluye recetas e ideas para desayunos, comidas, cenas, snacks y otras preparaciones.",
+      "",
+      "Buscamos que tengas alternativas para no caer siempre en las mismas comidas y puedas elegir las preparaciones que mejor se adapten a ti. 🥗✨",
+      "",
+      "📚 Todo forma parte del paquete digital de $79 MXN.",
+      "",
+      "Después de confirmar tu pago te entregamos el material por WhatsApp."
+    ].join("\n");
+  }
+
+  // ========================================================
+  // FÁCIL — DISPARADOR MANYCHAT
+  // ========================================================
+  if (
+    contieneAlguna(texto, [
+      "facil", "es facil", "es dificil", "como se usa",
+      "puedo entenderlo", "es complicado", "principiante"
+    ])
+  ) {
+    return [
+      "😊 Sí. El material está organizado para que puedas consultarlo de forma sencilla desde tu celular.",
+      "",
+      "No necesitas leer todo de principio a fin ni tener conocimientos de nutrición: puedes ir directamente a las recetas, ideas o secciones que necesites. 🥗📲",
+      "",
+      "💙 La intención es hacer más práctica tu alimentación, no complicarla.",
+      "",
+      "Puedes obtener el Mega Pack completo por $79 MXN; primero confirmamos tu pago y después te entregamos todo."
+    ].join("\n");
+  }
+
+  // ========================================================
+  // BENEFICIOS — DISPARADOR MANYCHAT
+  // ========================================================
+  if (
+    contieneAlguna(texto, [
+      "beneficios", "para que sirve", "que aprendere",
+      "me sirve", "vale la pena"
+    ])
+  ) {
+    return [
+      "💙 El principal beneficio es que tendrás más ideas y opciones para organizar tu alimentación, sin estar preguntándote todos los días “¿qué preparo hoy?” 🥗",
+      "",
+      "Encontrarás recursos para desayunos, comidas, cenas, snacks, postres y compras, reunidos en un solo lugar para que puedas consultarlos cuando los necesites. 📚✨",
+      "",
+      "🎁 Todo el Mega Pack está disponible por solo $79 MXN.",
+      "",
+      "Primero realizas tu pago y, una vez confirmado, te entregamos todo el material digital por WhatsApp.",
+      "",
+      "👇 Puedes continuar por transferencia o depósito en OXXO."
+    ].join("\n");
+  }
+
+  // ========================================================
+  // APORTACIÓN VOLUNTARIA
+  // ========================================================
+  if (
+    contieneAlguna(texto, [
+      "aportacion", "aportacion voluntaria", "apoyo voluntario",
+      "quiero apoyar", "quiero aportar", "puedo dar mas",
+      "80 pesos", "100 pesos", "150 pesos"
     ])
   ) {
     return respuestaAportacion();
   }
 
-  // --------------------------------------------------------
-  // DATOS BANCARIOS
-  // --------------------------------------------------------
-
-  const preguntaCuenta =
+  // ========================================================
+  // DATOS DE TRANSFERENCIA
+  // ========================================================
+  if (
     contieneAlguna(texto, [
-      "numero de cuenta",
-      "numero para depositar",
-      "numero para transferir",
-      "datos bancarios",
-      "datos de transferencia",
-      "cuenta bancaria",
-      "a que cuenta",
-      "en que cuenta",
-      "donde transfiero",
-      "cual es la cuenta",
-      "cual cuenta",
-      "pasame la cuenta",
-      "mandame la cuenta",
-      "clave interbancaria",
-      "clabe"
-    ]) ||
-    texto === "cuenta";
-
-  if (preguntaCuenta) {
+      "transferencia", "clabe", "cuenta", "datos bancarios",
+      "datos de transferencia", "donde transfiero"
+    ])
+  ) {
     return respuestaCuenta();
   }
 
-  // --------------------------------------------------------
+  // ========================================================
   // OXXO
-  // --------------------------------------------------------
-
-  const preguntaOxxo =
+  // ========================================================
+  if (
     contieneAlguna(texto, [
-      "deposito en oxxo",
-      "depositar en oxxo",
-      "pagar en oxxo",
-      "pago en oxxo",
-      "como pago en oxxo",
-      "como deposito en oxxo",
-      "codigo de oxxo",
-      "qr de oxxo",
-      "ticket de oxxo"
-    ]) ||
-    texto === "oxxo";
-
-  if (preguntaOxxo) {
+      "oxxo", "deposito en oxxo", "pagar en oxxo",
+      "ticket de oxxo", "qr de oxxo"
+    ])
+  ) {
     return respuestaOxxo();
   }
 
-  // --------------------------------------------------------
-  // PRECIO PRINCIPAL
-  // --------------------------------------------------------
-
+  // ========================================================
+  // PAGAR DESPUÉS
+  // ========================================================
   if (
     contieneAlguna(texto, [
-      "cuanto cuesta",
-      "cuanto vale",
-      "que precio",
-      "precio",
-      "costo",
-      "79 pesos",
-      "cuanto pago",
-      "cuanto deposito",
-      "cuanto transfiero",
-      "cuanto debo pagar"
+      "pagar despues", "pago despues", "puedo pagar manana",
+      "pagar manana", "mas tarde", "otro dia", "cuando tenga dinero"
     ])
   ) {
-    return respuestaPrecio();
+    return respuestaPagoPosterior();
   }
 
-  // --------------------------------------------------------
-  // CONTENIDO
-  // --------------------------------------------------------
-
+  // ========================================================
+  // UPSELL $70
+  // ========================================================
   if (
     contieneAlguna(texto, [
-      "que incluye",
-      "que contiene",
-      "que trae",
-      "contenido",
-      "mega pack",
-      "que voy a recibir"
-    ])
-  ) {
-    return respuestaContenido();
-  }
-
-  // --------------------------------------------------------
-  // FORMAS DE PAGO
-  // --------------------------------------------------------
-
-  if (
-    contieneAlguna(texto, [
-      "como pago",
-      "formas de pago",
-      "metodos de pago",
-      "metodo de pago",
-      "quiero pagar"
-    ])
-  ) {
-    return cierrePago();
-  }
-
-  // --------------------------------------------------------
-  // ENTREGA / PDF
-  // --------------------------------------------------------
-
-  if (
-    contieneAlguna(texto, [
-      "es fisico",
-      "producto fisico",
-      "es digital",
-      "es pdf",
-      "archivo pdf",
-      "como lo recibo",
-      "cuando lo recibo",
-      "donde lo recibo",
-      "como se entrega",
-      "entrega",
-      "envio",
-      "domicilio"
-    ])
-  ) {
-    return respuestaEntrega();
-  }
-
-  // --------------------------------------------------------
-  // BONOS / POSTRES
-  // --------------------------------------------------------
-
-  if (
-    contieneAlguna(texto, [
-      "bonos",
-      "postres",
-      "incluye postres",
-      "recetas de postres",
-      "habitos saludables"
-    ])
-  ) {
-    return [
-      "🎁 Sí. La oferta incluye:",
-      "",
-      `🍰 ${PRODUCTO.bonos[0]}`,
-      `🌱 ${PRODUCTO.bonos[1]}`,
-      "",
-      "Se entregan junto con tu material después de confirmar el pago."
-    ].join("\n");
-  }
-
-  // --------------------------------------------------------
-  // UPSELL / PACK DE $70
-  // --------------------------------------------------------
-
-  if (
-    contieneAlguna(texto, [
-      "pack complementario",
-      "70 pesos",
-      "otro pack",
-      "paquete adicional",
-      "producto adicional",
-      "jugos y batidos",
-      "registro de glucometrias",
-      "resistencia a la insulina"
+      "pack complementario", "70 pesos", "paquete adicional",
+      "producto adicional", "jugos y batidos",
+      "registro de glucometrias", "resistencia a la insulina"
     ])
   ) {
     return respuestaUpsell();
-  }
-
-  // --------------------------------------------------------
-  // FRUTAS
-  // --------------------------------------------------------
-
-  if (
-    contieneAlguna(texto, [
-      "frutas",
-      "que frutas puedo comer",
-      "puedo comer fruta"
-    ])
-  ) {
-    return [
-      "🍎 Las frutas pueden formar parte de una alimentación equilibrada.",
-      "",
-      "La cantidad y elección adecuada puede variar según cada persona, sus medicamentos y las indicaciones de su profesional de salud."
-    ].join("\n");
-  }
-
-  // --------------------------------------------------------
-  // TORTILLA, PAN Y ARROZ
-  // --------------------------------------------------------
-
-  if (
-    contieneAlguna(texto, [
-      "tortilla",
-      "arroz",
-      "pan"
-    ])
-  ) {
-    return [
-      "💙 No se trata de prohibir alimentos de forma general.",
-      "",
-      "Las porciones y combinaciones adecuadas pueden variar según cada persona. Si tienes una indicación médica específica, conviene seguirla."
-    ].join("\n");
-  }
-
-  // --------------------------------------------------------
-  // RECETAS / INGREDIENTES
-  // --------------------------------------------------------
-
-  if (
-    contieneAlguna(texto, [
-      "recetas",
-      "ingredientes",
-      "cocinar",
-      "son faciles",
-      "son dificiles"
-    ])
-  ) {
-    return [
-      "🥗 El material reúne distintas recetas e ideas para ayudarte a tener más opciones en desayunos, comidas, cenas y snacks.",
-      "",
-      "Encontrarás preparaciones de diferentes niveles de dificultad para que puedas elegir las que mejor se adapten a ti."
-    ].join("\n");
-  }
-
-  // --------------------------------------------------------
-  // FACILIDAD DE USO
-  // --------------------------------------------------------
-
-  if (
-    contieneAlguna(texto, [
-      "es facil",
-      "es dificil",
-      "como se usa",
-      "puedo entenderlo"
-    ])
-  ) {
-    return [
-      "😊 El material está organizado para que puedas consultarlo de forma práctica desde tu celular.",
-      "",
-      "Puedes ir directamente a la sección o receta que necesites sin tener que leer todo de principio a fin."
-    ].join("\n");
-  }
-
-  // --------------------------------------------------------
-  // BENEFICIOS
-  // --------------------------------------------------------
-
-  if (
-    contieneAlguna(texto, [
-      "beneficios",
-      "para que sirve",
-      "que aprendere"
-    ])
-  ) {
-    return [
-      "💙 El objetivo del material es darte más ideas, variedad y organización al momento de preparar tus alimentos.",
-      "",
-      "No sustituye la orientación de tu médico o nutriólogo."
-    ].join("\n");
   }
 
   return null;
