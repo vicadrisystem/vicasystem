@@ -434,6 +434,136 @@ function respuestaDirecta(mensajeOriginal) {
   }
 
   // ========================================================
+  // DISPARADORES EXACTOS DE MANYCHAT
+  // ========================================================
+
+  if (texto === "precio") {
+    return [
+      "💙 El Mega Pack completo tiene un precio único de $79 MXN.",
+      "",
+      "Incluye el material principal, recetas, guía de compras y los bonos de la oferta. 🥗📚",
+      "",
+      "Primero realizas tu pago y, una vez confirmado, te entregamos todo por WhatsApp.",
+      "",
+      "👇 Puedes continuar por transferencia bancaria o depósito en OXXO."
+    ].join("\n");
+  }
+
+  if (texto === "contenido") {
+    return [
+      "🥗 Tu Mega Pack incluye:",
+      "",
+      "📘 Plan Integral de Alimentación",
+      "🍽️ Recetario con desayunos, comidas, cenas y snacks",
+      "🛒 Guía de Compras Inteligentes",
+      "",
+      "🎁 También recibes el Recetario de Postres Saludables y la Guía de Hábitos Saludables.",
+      "",
+      "💙 Todo por $79 MXN. Primero confirmamos tu pago y después te entregamos el paquete digital."
+    ].join("\n");
+  }
+
+  if (texto === "pago") {
+    return [
+      "💙 El pago del Mega Pack es de $79 MXN.",
+      "",
+      "Puedes elegir:",
+      "🏦 Transferencia bancaria",
+      "🏪 Depósito en OXXO",
+      "",
+      "Después de pagar escribe LISTO ✅, espera mi respuesta y envía tu comprobante.",
+      "",
+      "📲 Una vez validado, te entregamos todo el material."
+    ].join("\n");
+  }
+
+  if (texto === "entrega") {
+    return [
+      "📲 La entrega es digital por WhatsApp.",
+      "",
+      "Primero realizas tu pago de $79 MXN, escribes LISTO ✅ y envías tu comprobante.",
+      "",
+      "Cuando el pago quede confirmado, recibes tu Mega Pack y bonos en PDF. 💙"
+    ].join("\n");
+  }
+
+  if (texto === "postres") {
+    return [
+      "🍰 Sí. Tu compra incluye un Recetario de Postres Saludables como bono.",
+      "",
+      "Así tendrás más ideas cuando quieras preparar algo diferente sin quedarte siempre con las mismas opciones. 💙",
+      "",
+      "🎁 Está incluido en los $79 MXN y se entrega junto con tu material después de confirmar el pago."
+    ].join("\n");
+  }
+
+  if (texto === "frutas") {
+    return [
+      "🍎 Las frutas pueden formar parte de una alimentación organizada.",
+      "",
+      "El material te brinda ideas y orientación práctica, aunque las porciones adecuadas pueden variar según cada persona y las indicaciones de su profesional de salud.",
+      "",
+      "💙 El Mega Pack cuesta $79 MXN y lo recibes después de confirmar tu pago."
+    ].join("\n");
+  }
+
+  if (texto === "comidas" || texto === "comida") {
+    return [
+      "🥗 Si una de tus dudas diarias es “¿qué preparo hoy?”, justamente para eso reunimos este material.",
+      "",
+      "Encontrarás ideas para desayunos, comidas, cenas y snacks para tener más variedad y organización. 📚",
+      "",
+      "💙 El Mega Pack completo cuesta $79 MXN. Primero realizas tu pago y después de validarlo te entregamos todo por WhatsApp."
+    ].join("\n");
+  }
+
+  if (texto === "recetas") {
+    return [
+      "🍽️ Sí. Encontrarás recetas e ideas para desayunos, comidas, cenas, snacks y otras preparaciones.",
+      "",
+      "La intención es darte más opciones para que no tengas que recurrir siempre a las mismas comidas. 🥗✨",
+      "",
+      "📚 Todo está incluido en el Mega Pack de $79 MXN y se entrega después de confirmar tu pago."
+    ].join("\n");
+  }
+
+  if (texto === "facil") {
+    return [
+      "😊 Sí. El material está organizado para consultarlo fácilmente desde tu celular.",
+      "",
+      "Puedes ir directamente a las recetas o secciones que necesites sin leer todo de principio a fin. 📲",
+      "",
+      "💙 La idea es hacer más práctica tu alimentación. El Mega Pack cuesta $79 MXN y se entrega después de validar el pago."
+    ].join("\n");
+  }
+
+  if (texto === "beneficios") {
+    return [
+      "💙 El principal beneficio es tener más ideas y opciones para organizar tu alimentación sin preguntarte todos los días “¿qué preparo hoy?” 🥗",
+      "",
+      "Tendrás recursos para desayunos, comidas, cenas, snacks, postres y compras reunidos en un solo lugar. 📚✨",
+      "",
+      "🎁 Todo el Mega Pack está disponible por $79 MXN.",
+      "",
+      "Primero realizas tu pago y, una vez confirmado, te entregamos todo por WhatsApp.",
+      "",
+      "👇 Puedes continuar por transferencia o depósito en OXXO."
+    ].join("\n");
+  }
+
+  // ========================================================
+  // PAGAR DESPUÉS
+  // ========================================================
+  if (
+    contieneAlguna(texto, [
+      "pagar despues", "pago despues", "puedo pagar manana",
+      "pagar manana", "mas tarde", "otro dia", "cuando tenga dinero"
+    ])
+  ) {
+    return respuestaPagoPosterior();
+  }
+
+  // ========================================================
   // PRECIO — DISPARADOR MANYCHAT
   // ========================================================
   if (
@@ -670,18 +800,6 @@ function respuestaDirecta(mensajeOriginal) {
   }
 
   // ========================================================
-  // PAGAR DESPUÉS
-  // ========================================================
-  if (
-    contieneAlguna(texto, [
-      "pagar despues", "pago despues", "puedo pagar manana",
-      "pagar manana", "mas tarde", "otro dia", "cuando tenga dinero"
-    ])
-  ) {
-    return respuestaPagoPosterior();
-  }
-
-  // ========================================================
   // UPSELL $70
   // ========================================================
   if (
@@ -707,16 +825,43 @@ app.get("/", (req, res) => {
     .send("Bot ventas activo ✅");
 });
 
+app.get("/health", (req, res) => {
+  return res.status(200).json({
+    ok: true,
+    servicio: "VICA SYSTEMS",
+    funnel: "prepago",
+    precio: DATOS_PAGO.precioPrincipal,
+    puerto: PORT
+  });
+});
+
 app.post("/mensaje", async (req, res) => {
   try {
+    // Compatible con el formato actual y variantes comunes de ManyChat.
     const mensaje =
       req.body?.texto ??
       req.body?.mensaje ??
       req.body?.message ??
+      req.body?.text ??
+      req.body?.data?.texto ??
+      req.body?.data?.mensaje ??
+      req.body?.data?.message ??
+      req.body?.data?.text ??
       "";
 
+    const valorMensaje =
+      typeof mensaje === "object"
+        ? (
+            mensaje?.text ??
+            mensaje?.texto ??
+            mensaje?.message ??
+            mensaje?.mensaje ??
+            ""
+          )
+        : mensaje;
+
     const textoUsuario =
-      String(mensaje).trim();
+      String(valorMensaje ?? "").trim();
 
     console.log(
       "Mensaje recibido:",
@@ -782,7 +927,13 @@ app.post("/mensaje", async (req, res) => {
       response.output_text || "";
 
     const respuestaFinal =
-      agregarCierre(respuestaIA);
+      respuestaIA.trim()
+        ? agregarCierre(respuestaIA)
+        : [
+            "Con gusto te ayudo 😊",
+            "",
+            cierrePago()
+          ].join("\n");
 
     console.log(
       "Respuesta enviada:",
